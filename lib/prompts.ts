@@ -1,119 +1,117 @@
-import { IMAGE_CATEGORIES, type IngredientsInput } from "./types";
-import { DEFAULT_PANTRY_STAPLES } from "./pantry-staples";
-import type { Recipe } from "./types";
+import { DeliveryItem, Recipe } from "./types";
 
-const SYSTEM_PROMPT = `You are a skilled home cook and meal planner. You create practical, delicious dinner recipes for a family of 3. Your recipes are written at a medium-to-advanced cooking skill level — you assume the cook knows basic techniques (dicing, deglazing, emulsifying) but you still provide clear step-by-step instructions.
-
-You always respond with ONLY valid JSON matching the requested schema. No markdown, no code fences, no extra text.`;
-
-export function getSystemPrompt(): string {
-  return SYSTEM_PROMPT;
+export interface SuggestInput {
+  delivery: DeliveryItem[];
+  pantry: string[];
+  meals: { date: string; cuisine: string | null }[];
+  adults: number;
+  kids: number;
+  recentTitles: string[]; // last 30 days, exclude these to keep variety
 }
 
-export function buildGenerationPrompt(ingredients: IngredientsInput): string {
-  const pantryList = DEFAULT_PANTRY_STAPLES.join(", ");
-  const categories = IMAGE_CATEGORIES.join(", ");
+export const SYSTEM_PROMPT = `You are a personal home chef writing recipe cards for a single household. Your job is to plan dinners that use the ingredients the family already has.
 
-  return `I have the following ingredients for the week:
+Rules:
+- ONE recipe per requested cooking night.
+- Use the supplied DELIVERY items as the protein/produce backbone. Don't waste them.
+- Treat PANTRY items as freely available — don't list them as "to-buy".
+- Anything else needed must be marked source: "to-buy".
+- Mark delivery items as source: "delivery". Mark pantry items as source: "pantry".
+- Respect the cuisine preference for each night. If the cuisine is null, choose something complementary that doesn't repeat what's already in the week.
+- Avoid repeating any title in RECENT_MEALS.
+- Aim for 25-45 minute meals on weeknights. Slow-cook or 60+ min only if the user explicitly asks.
+- Portions: scale for ADULTS adults + KIDS kids (kids = ~half adult portion).
+- Add a child_note on at least one step per recipe if there's something a kid would object to (chilli, strong herbs, raw garlic, etc.) — explain how to adapt.
+- Keep instructions actionable. Number them implicitly via array order; each step gets a "minutes" estimate.
+- difficulty must be Easy, Medium, or Hard.
+- Return STRICT JSON matching the provided tool schema. No prose outside the tool call.`;
 
-MEATS (from butcher):
-${ingredients.meats.map((m) => `- ${m}`).join("\n")}
+export function buildUserPrompt(input: SuggestInput): string {
+  const { delivery, pantry, meals, adults, kids, recentTitles } = input;
+  return `ADULTS: ${adults}
+KIDS: ${kids}
 
-VEGETABLES (from grocer):
-${ingredients.vegetables.map((v) => `- ${v}`).join("\n")}
+DELIVERY (use these first):
+${delivery.map((d) => `- ${d.name}${d.qty ? " (" + d.qty + ")" : ""}`).join("\n") || "(none)"}
 
-${ingredients.extras.length > 0 ? `OTHER INGREDIENTS:\n${ingredients.extras.map((e) => `- ${e}`).join("\n")}` : ""}
+PANTRY (free to use, do NOT list as to-buy):
+${pantry.map((p) => `- ${p}`).join("\n") || "(none)"}
 
-ASSUMED PANTRY STAPLES:
-${pantryList}
+NIGHTS TO PLAN:
+${meals
+  .map(
+    (m, i) =>
+      `${i + 1}. ${m.date}${m.cuisine ? ` — cuisine: ${m.cuisine}` : " — cuisine: chef's choice"}`,
+  )
+  .join("\n")}
 
-Generate exactly 7 dinner recipes (Monday=0 through Sunday=6) for a family of 3.
+RECENT MEALS (do not repeat):
+${recentTitles.length ? recentTitles.map((t) => `- ${t}`).join("\n") : "(none)"}
 
-Requirements:
-1. Use ALL the provided meats and vegetables across the week — distribute them sensibly, no ingredient wasted.
-2. Vary cooking techniques across the week (don't repeat similar dishes back to back).
-3. Include 1-2 quicker meals (under 30 min) for busy weeknights, and allow 1 more ambitious meal for the weekend.
-4. For each recipe, list which pantry staples are used AND flag any items needed that weren't in the input or pantry list as "extraItems".
-5. Each step should have a stepNumber, title, estimated durationMinutes, and detailed instructions.
-6. Assign each recipe an imageCategory from exactly this list: [${categories}]
-7. The "ingredients" array should list items with name, quantity (e.g. "500g", "2 medium"), and fromInput (true if from the meats/vegetables/extras list, false if from pantry).
-
-Return a JSON object with this exact structure:
-{
-  "recipes": [
-    {
-      "dayIndex": 0,
-      "title": "Recipe Title",
-      "description": "Brief enticing description",
-      "totalTimeMinutes": 45,
-      "prepTimeMinutes": 15,
-      "cookTimeMinutes": 30,
-      "servings": 3,
-      "imageCategory": "chicken",
-      "ingredients": [
-        {"name": "chicken thighs", "quantity": "500g", "fromInput": true}
-      ],
-      "pantryItems": ["olive oil", "salt", "pepper"],
-      "extraItems": ["fresh basil"],
-      "steps": [
-        {
-          "stepNumber": 1,
-          "title": "Prep the chicken",
-          "durationMinutes": 5,
-          "instructions": "Detailed instructions here...",
-          "tip": "Optional chef tip"
-        }
-      ],
-      "tips": "Optional overall recipe tip"
-    }
-  ]
-}`;
+Generate exactly ${meals.length} recipes, in order, one per night. Use the suggest_recipes tool.`;
 }
 
-export function buildRegenerationPrompt(
-  ingredients: IngredientsInput,
-  existingRecipes: Recipe[],
-  dayIndex: number
-): string {
-  const pantryList = DEFAULT_PANTRY_STAPLES.join(", ");
-  const categories = IMAGE_CATEGORIES.join(", ");
-
-  const otherRecipes = existingRecipes
-    .filter((r) => r.dayIndex !== dayIndex)
-    .map((r) => `- Day ${r.dayIndex}: ${r.title}`)
-    .join("\n");
-
-  return `I need a replacement recipe for day ${dayIndex} of my weekly meal plan.
-
-My available ingredients for the week:
-MEATS: ${ingredients.meats.join(", ")}
-VEGETABLES: ${ingredients.vegetables.join(", ")}
-${ingredients.extras.length > 0 ? `OTHER: ${ingredients.extras.join(", ")}` : ""}
-PANTRY: ${pantryList}
-
-The other recipes this week are:
-${otherRecipes}
-
-Generate ONE different recipe for day ${dayIndex} that:
-1. Doesn't duplicate any dish already in the plan
-2. Uses a different cooking technique than adjacent days
-3. Uses available ingredients (from input or pantry)
-4. Assign an imageCategory from: [${categories}]
-
-Return a JSON object with this exact structure (single recipe, not an array):
-{
-  "dayIndex": ${dayIndex},
-  "title": "Recipe Title",
-  "description": "Brief enticing description",
-  "totalTimeMinutes": 45,
-  "prepTimeMinutes": 15,
-  "cookTimeMinutes": 30,
-  "servings": 3,
-  "imageCategory": "chicken",
-  "ingredients": [{"name": "...", "quantity": "...", "fromInput": true}],
-  "pantryItems": ["olive oil"],
-  "extraItems": [],
-  "steps": [{"stepNumber": 1, "title": "...", "durationMinutes": 5, "instructions": "...", "tip": "..."}],
-  "tips": "Optional"
-}`;
-}
+// Tool schema for Claude — drives structured output.
+export const SUGGEST_TOOL = {
+  name: "suggest_recipes",
+  description: "Return the planned recipes for the requested cooking nights.",
+  input_schema: {
+    type: "object",
+    properties: {
+      recipes: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string" },
+            cuisine: { type: "string" },
+            total_minutes: { type: "integer" },
+            prep_minutes: { type: "integer" },
+            cook_minutes: { type: "integer" },
+            difficulty: { type: "string", enum: ["Easy", "Medium", "Hard"] },
+            ingredients: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  qty: { type: "string" },
+                  source: {
+                    type: "string",
+                    enum: ["delivery", "pantry", "to-buy"],
+                  },
+                },
+                required: ["name", "qty", "source"],
+              },
+            },
+            steps: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  minutes: { type: "integer" },
+                  instruction: { type: "string" },
+                  child_note: { type: "string" },
+                },
+                required: ["minutes", "instruction"],
+              },
+            },
+          },
+          required: [
+            "title",
+            "description",
+            "cuisine",
+            "total_minutes",
+            "prep_minutes",
+            "cook_minutes",
+            "difficulty",
+            "ingredients",
+            "steps",
+          ],
+        },
+      },
+    },
+    required: ["recipes"],
+  },
+} as const;

@@ -1,54 +1,40 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import { AppShell } from "@/components/AppShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-display",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-body",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Meal Planner",
-  description: "AI-powered weekly meal planning",
+  description: "Weekly meal planning for your household",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg" },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport = {
+  themeColor: "#FAF7F2",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <nav className="border-b border-border bg-card">
-          <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-6">
-            <Link href="/" className="text-lg font-bold text-primary">
-              Meal Planner
-            </Link>
-            <Link
-              href="/ingredients"
-              className="text-sm text-muted hover:text-foreground transition-colors"
-            >
-              New Plan
-            </Link>
-            <Link
-              href="/history"
-              className="text-sm text-muted hover:text-foreground transition-colors"
-            >
-              History
-            </Link>
-          </div>
-        </nav>
-        <main className="flex-1">{children}</main>
+    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+      <body>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

@@ -1,65 +1,96 @@
 import { z } from "zod";
 
-export const IMAGE_CATEGORIES = [
-  "chicken", "beef", "pork", "lamb", "fish", "pasta", "stir-fry",
-  "salad", "soup", "roast", "curry", "burger", "tacos", "rice-bowl",
-  "baked", "other",
-] as const;
+export const IngredientSourceEnum = z.enum(["delivery", "pantry", "to-buy"]);
+export type IngredientSource = z.infer<typeof IngredientSourceEnum>;
 
 export const RecipeIngredientSchema = z.object({
   name: z.string(),
-  quantity: z.string(),
-  fromInput: z.boolean(),
+  qty: z.string(),
+  source: IngredientSourceEnum,
 });
+export type RecipeIngredient = z.infer<typeof RecipeIngredientSchema>;
 
 export const RecipeStepSchema = z.object({
-  stepNumber: z.number(),
-  title: z.string(),
-  durationMinutes: z.number(),
-  instructions: z.string(),
-  tip: z.string().optional(),
+  minutes: z.number().int().nonnegative(),
+  instruction: z.string(),
+  child_note: z.string().optional(),
 });
+export type RecipeStep = z.infer<typeof RecipeStepSchema>;
 
 export const RecipeSchema = z.object({
-  dayIndex: z.number().min(0).max(6),
   title: z.string(),
   description: z.string(),
-  totalTimeMinutes: z.number(),
-  prepTimeMinutes: z.number(),
-  cookTimeMinutes: z.number(),
-  servings: z.number().default(3),
-  imageCategory: z.string(),
+  cuisine: z.string(),
+  total_minutes: z.number().int().positive(),
+  prep_minutes: z.number().int().nonnegative(),
+  cook_minutes: z.number().int().nonnegative(),
+  difficulty: z.enum(["Easy", "Medium", "Hard"]),
   ingredients: z.array(RecipeIngredientSchema),
-  pantryItems: z.array(z.string()),
-  extraItems: z.array(z.string()),
   steps: z.array(RecipeStepSchema),
-  tips: z.string().optional(),
 });
-
-export const WeeklyPlanSchema = z.object({
-  recipes: z.array(RecipeSchema).length(7),
-});
-
-export type RecipeIngredient = z.infer<typeof RecipeIngredientSchema>;
-export type RecipeStep = z.infer<typeof RecipeStepSchema>;
 export type Recipe = z.infer<typeof RecipeSchema>;
-export type WeeklyPlan = z.infer<typeof WeeklyPlanSchema>;
 
-export interface IngredientsInput {
-  meats: string[];
-  vegetables: string[];
-  extras: string[];
-}
+export const SuggestionsResponseSchema = z.object({
+  recipes: z.array(RecipeSchema),
+});
+export type SuggestionsResponse = z.infer<typeof SuggestionsResponseSchema>;
 
-export interface SavedPlan {
+// Parsed delivery item
+export const DeliveryItemSchema = z.object({
+  name: z.string(),
+  qty: z.string().optional(),
+  category: z.enum(["meat", "produce", "dairy", "other"]).default("other"),
+});
+export type DeliveryItem = z.infer<typeof DeliveryItemSchema>;
+
+// DB row types
+export interface PlanRow {
   id: number;
-  weekLabel: string;
-  createdAt: string;
-  ingredients: IngredientsInput;
-  recipes: Recipe[];
+  name: string | null;
+  created_at: string;
+  adults: number;
+  kids: number;
+  status: "active" | "archived";
+  rating: number | null;
+  notes: string | null;
+  archived_at: string | null;
+  delivery_json: string;
 }
 
-export const DAY_NAMES = [
-  "Monday", "Tuesday", "Wednesday", "Thursday",
-  "Friday", "Saturday", "Sunday",
-] as const;
+export interface MealRow {
+  id: number;
+  plan_id: number;
+  scheduled_date: string;
+  cuisine_pref: string | null;
+  recipe_json: string | null;
+  status: "planned" | "cooked" | "skipped";
+  cooked_at: string | null;
+}
+
+export interface PantryItemRow {
+  id: number;
+  name: string;
+  category: string;
+}
+
+export interface ShoppingItemRow {
+  id: number;
+  name: string;
+  qty: string | null;
+  source_meal_id: number | null;
+  ticked: number;
+  added_at: string;
+}
+
+export interface FavouriteRow {
+  id: number;
+  recipe_json: string;
+  title: string;
+  saved_at: string;
+}
+
+export function planDisplayName(p: PlanRow): string {
+  if (p.name && p.name.trim()) return p.name;
+  const d = new Date(p.created_at);
+  return `Plan from ${d.toLocaleDateString("en-AU", { month: "short", day: "numeric" })}`;
+}

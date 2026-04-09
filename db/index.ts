@@ -1,20 +1,36 @@
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+import { createClient, type Client } from "@libsql/client";
+import { DEFAULT_PANTRY_STAPLES } from "../lib/pantry-staples";
+import { SCHEMA_SQL } from "./schema";
 
-const DB_PATH = path.join(process.cwd(), "db", "meal-planner.db");
-const SCHEMA_PATH = path.join(process.cwd(), "db", "schema.sql");
+let clientPromise: Promise<Client> | null = null;
 
-let db: Database.Database | null = null;
+async function init(): Promise<Client> {
+  const url = process.env.TURSO_DATABASE_URL ?? "file:meal-planner.db";
+  const authToken = process.env.TURSO_AUTH_TOKEN;
 
-export function getDb(): Database.Database {
-  if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
+  const client = createClient({ url, authToken });
 
-    const schema = fs.readFileSync(SCHEMA_PATH, "utf-8");
-    db.exec(schema);
+  const schema = SCHEMA_SQL;
+  // Split on semicolons followed by newline; libsql executeMultiple is fine for raw SQL.
+  await client.executeMultiple(schema);
+
+  // Seed pantry on first boot.
+  const count = await client.execute("SELECT COUNT(*) as c FROM pantry_items");
+  const c = Number(count.rows[0]?.c ?? 0);
+  if (c === 0) {
+    await client.batch(
+      DEFAULT_PANTRY_STAPLES.map((it) => ({
+        sql: "INSERT OR IGNORE INTO pantry_items (name, category) VALUES (?, ?)",
+        args: [it.name, it.category],
+      })),
+      "write",
+    );
   }
-  return db;
+
+  return client;
+}
+
+export function getClient(): Promise<Client> {
+  if (!clientPromise) clientPromise = init();
+  return clientPromise;
 }
