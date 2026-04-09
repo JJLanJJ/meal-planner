@@ -21,7 +21,9 @@ export default function NewPlanPage() {
   const [kids, setKids] = useState(1);
   const [butcherText, setButcherText] = useState("");
   const [grocerText, setGrocerText] = useState("");
+  const [otherText, setOtherText] = useState("");
   const [parsing, setParsing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [delivery, setDelivery] = useState<DeliveryItem[]>([]);
 
   // Step 2
@@ -44,6 +46,7 @@ export default function NewPlanPage() {
         if (d.kids != null) setKids(d.kids);
         if (d.butcherText) setButcherText(d.butcherText);
         if (d.grocerText) setGrocerText(d.grocerText);
+        if (d.otherText) setOtherText(d.otherText);
         if (d.delivery) setDelivery(d.delivery);
         if (d.nights) setNights(d.nights);
       } catch {}
@@ -53,19 +56,62 @@ export default function NewPlanPage() {
   useEffect(() => {
     localStorage.setItem(
       "plan-draft",
-      JSON.stringify({ name, adults, kids, butcherText, grocerText, delivery, nights }),
+      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, delivery, nights }),
     );
-  }, [name, adults, kids, butcherText, grocerText, delivery, nights]);
+  }, [name, adults, kids, butcherText, grocerText, otherText, delivery, nights]);
+
+  function mergeItems(existing: DeliveryItem[], incoming: DeliveryItem[]): DeliveryItem[] {
+    const seen = new Set(existing.map((d) => d.name.toLowerCase()));
+    const merged = [...existing];
+    for (const it of incoming) {
+      const key = it.name.toLowerCase();
+      if (!seen.has(key)) {
+        merged.push(it);
+        seen.add(key);
+      }
+    }
+    return merged;
+  }
 
   async function parseAll() {
     setParsing(true);
     try {
-      const combined = `${butcherText}\n${grocerText}`;
+      const combined = [butcherText, grocerText, otherText].filter(Boolean).join("\n");
       const r = await fetch("/api/parse", { method: "POST", body: JSON.stringify({ text: combined }) });
       const j = await r.json();
-      setDelivery(j.items ?? []);
+      setDelivery((prev) => mergeItems(prev, j.items ?? []));
     } finally {
       setParsing(false);
+    }
+  }
+
+  async function uploadFile(file: File) {
+    setUploading(true);
+    try {
+      const isPdf = file.type === "application/pdf";
+      const isImage = file.type.startsWith("image/");
+      if (!isPdf && !isImage) {
+        alert("Only images or PDFs supported.");
+        return;
+      }
+      const buf = await file.arrayBuffer();
+      const data = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      const r = await fetch("/api/parse-file", {
+        method: "POST",
+        body: JSON.stringify({
+          media_type: file.type,
+          data,
+          kind: isPdf ? "pdf" : "image",
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        alert(j.error ?? "Parse failed");
+        return;
+      }
+      setDelivery((prev) => mergeItems(prev, j.items ?? []));
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -137,7 +183,7 @@ export default function NewPlanPage() {
     return (
       <div className="max-w-xl mx-auto">
         <p className="num">Step 1 of 3</p>
-        <h1 className="font-display text-4xl mt-1 mb-6">This week&apos;s delivery</h1>
+        <h1 className="font-display text-4xl mt-1 mb-6">Upcoming delivery</h1>
 
         <div className="card p-5 mb-4">
           <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">
@@ -181,6 +227,33 @@ export default function NewPlanPage() {
             value={grocerText}
             onChange={(e) => setGrocerText(e.target.value)}
           />
+        </div>
+
+        <div className="card p-5 mb-4">
+          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">Other</label>
+          <textarea
+            className="input-field min-h-[120px]"
+            placeholder="Anything else — farmers' market, fishmonger, last-minute pickups…"
+            value={otherText}
+            onChange={(e) => setOtherText(e.target.value)}
+          />
+        </div>
+
+        <div className="card p-5 mb-4">
+          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">Upload receipt or invoice</label>
+          <p className="text-xs text-stone-500 mb-3">Image (jpg/png) or PDF — Claude will extract the items.</p>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadFile(f);
+              e.target.value = "";
+            }}
+            className="text-sm"
+          />
+          {uploading && <p className="text-xs text-stone-500 mt-2">Reading file…</p>}
         </div>
 
         {delivery.length > 0 && (
