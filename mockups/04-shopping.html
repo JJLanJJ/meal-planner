@@ -1,0 +1,64 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>04 · Shopping List</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em}
+  .card{background:#fff;border:1px solid #ECE6DC;border-radius:18px}
+  .row{display:flex;align-items:center;gap:.85rem;padding:.95rem 1.1rem;border-bottom:1px solid #ECE6DC}
+  .row:last-child{border-bottom:none}
+  .check{width:22px;height:22px;border-radius:6px;border:1.5px solid #C8BFB1;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .check.done{background:#4A6B4A;border-color:#4A6B4A;color:#fff}
+  .done-text{text-decoration:line-through;color:#A8A095}
+  .qty{margin-left:auto;color:#8B7355;font-size:.85rem}
+  .meta{font-size:.7rem;color:#A8A095;margin-top:.15rem}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="00-home.html" class="text-xs text-stone-500">← home</a>
+  <p class="num mt-6">Master list · 2 active plans</p>
+  <h1 class="font-display text-4xl mt-1 mb-2">Shopping list</h1>
+  <p class="text-stone-600 text-sm mb-6">Everything you still need across all your active plans, deduplicated. Tick items as you buy them — they stay ticked when new plans are created.</p>
+
+  <div class="flex items-center justify-between mb-3">
+    <p class="num">Produce · 4</p>
+    <button class="text-xs text-stone-500">Hide done</button>
+  </div>
+  <div class="card mb-6">
+    <div class="row"><div class="check"></div><div><p>Lemons</p><p class="meta">Plan A · Fri steak <span style="color:#4A6B4A">·</span> Plan B · Mon Korean BBQ</p></div><span class="qty">3</span></div>
+    <div class="row"><div class="check done">✓</div><div><p class="done-text">Avocados</p><p class="meta">Plan A · Wed tacos</p></div><span class="qty done-text">2</span></div>
+    <div class="row"><div class="check"></div><div><p>Fresh chilli</p><p class="meta">Plan B · Wed pad gra prow</p></div><span class="qty">1</span></div>
+    <div class="row"><div class="check"></div><div><p>Coriander</p><p class="meta">Plan B · Sun pho</p></div><span class="qty">1 bunch</span></div>
+  </div>
+
+  <p class="num mb-3">Your additions · 2</p>
+  <div class="card mb-6">
+    <div class="row"><div class="check"></div><div><p>Milk</p><p class="meta">Added by you</p></div><span class="qty">2L</span></div>
+    <div class="row"><div class="check"></div><div><p>Bananas</p><p class="meta">Added by you</p></div><span class="qty">6</span></div>
+    <div class="row" style="padding:.85rem 1.1rem">
+      <input type="text" placeholder="Add an item…" style="flex:1;background:#FAF7F2;border:1px solid #ECE6DC;border-radius:10px;padding:.55rem .8rem;font-size:.9rem;font-family:inherit;outline:none">
+      <button style="background:#4A6B4A;color:#fff;border-radius:9999px;width:34px;height:34px;font-size:1.1rem;flex-shrink:0">+</button>
+    </div>
+  </div>
+
+  <p class="num mb-3">Bakery &amp; Dry · 2</p>
+  <div class="card mb-6">
+    <div class="row"><div class="check"></div><div><p>Soft tortillas</p><p class="meta">Plan A · Wed tacos</p></div><span class="qty">8</span></div>
+    <div class="row"><div class="check done">✓</div><div><p class="done-text">Orecchiette pasta</p><p class="meta">Plan A · Thu pasta</p></div><span class="qty done-text">400g</span></div>
+  </div>
+
+  <p class="num mb-3">Dairy · 2</p>
+  <div class="card mb-6">
+    <div class="row"><div class="check"></div><div><p>Sour cream</p><p class="meta">Plan A · Wed tacos</p></div><span class="qty">small tub</span></div>
+    <div class="row"><div class="check"></div><div><p>Parmesan</p><p class="meta">Plan A · Thu pasta</p></div><span class="qty">100g</span></div>
+  </div>
+
+  <div class="card p-5 text-center text-sm text-stone-600">
+    <p class="num mb-1">Pantry check</p>
+    <p>Make sure you have: <span class="text-stone-800">olive oil, butter, garlic, soy sauce, fish sauce, chilli flakes, salt &amp; pepper</span>.</p>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,166 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>08 · History</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em}
+  .month-label{font-family:'Fraunces',serif;font-size:.95rem;color:#8B7355;padding:1.25rem 0 .5rem;border-bottom:1px solid #ECE6DC;margin-bottom:.85rem}
+  .row{background:#fff;border:1px solid #ECE6DC;border-radius:18px;display:grid;grid-template-columns:84px 1fr;gap:0;overflow:hidden;margin-bottom:.85rem}
+  .photo{background:linear-gradient(135deg,#E8DFD0,#D4C5AB);display:flex;align-items:center;justify-content:center;color:#8B7355;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase}
+  .pill{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.65rem;font-weight:500;background:#EAF0E8;color:#4A6B4A;margin-right:.25rem}
+  .meta{font-size:.7rem;color:#A8A095;margin-top:.25rem}
+  .heart{color:#4A6B4A}
+  .search{background:#fff;border:1px solid #ECE6DC;border-radius:9999px;padding:.7rem 1.1rem;width:100%;font-size:.9rem;font-family:inherit;outline:none}
+  .search:focus{border-color:#4A6B4A}
+  .tab{padding:.5rem 1rem;border-radius:9999px;font-size:.8rem;font-weight:500;color:#6B6258;border:1px solid #ECE6DC;background:#fff;flex-shrink:0}
+  .tab.active{background:#4A6B4A;color:#fff;border-color:#4A6B4A}
+  .stat{background:#fff;border:1px solid #ECE6DC;border-radius:14px;padding:.85rem 1rem;text-align:center}
+  .stat-num{font-family:'Fraunces',serif;font-size:1.6rem;color:#4A6B4A;line-height:1}
+  .stat-label{font-size:.65rem;color:#A8A095;text-transform:uppercase;letter-spacing:.08em;margin-top:.3rem}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="index.html" class="text-xs text-stone-500">← all mockups</a>
+  <p class="num mt-6">Cooked</p>
+  <h1 class="font-display text-4xl mt-1 mb-2">History</h1>
+  <p class="text-stone-600 text-sm mb-5">Every recipe card you've cooked, with the dates you made it. Tap any to view the full card or cook it again.</p>
+
+  <div class="grid grid-cols-3 gap-2 mb-5">
+    <div class="stat"><div class="stat-num">87</div><div class="stat-label">Meals cooked</div></div>
+    <div class="stat"><div class="stat-num">42</div><div class="stat-label">Unique recipes</div></div>
+    <div class="stat"><div class="stat-num">12</div><div class="stat-label">Favourites</div></div>
+  </div>
+
+  <input class="search mb-4" placeholder="Search past meals…">
+
+  <div class="flex gap-2 mb-2 overflow-x-auto pb-1">
+    <button class="tab active">All</button>
+    <button class="tab" style="color:#D9803A">★★★★★ only</button>
+    <button class="tab" style="color:#D9803A">★★★★+</button>
+    <button class="tab">This month</button>
+    <button class="tab">Chicken</button>
+    <button class="tab">Beef</button>
+    <button class="tab">Pork</button>
+    <button class="tab">Vegetarian</button>
+  </div>
+
+  <p class="month-label">April 2026 · 6 meals</p>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Pan-Seared Steak &amp; Smashed Potatoes</h3>
+          <p class="meta">Tue 7 Apr · 30 min</p>
+        </div>
+        <span class="text-lg heart">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Pub classic</span><span class="pill">6th time</span><span class="pill" style="background:#FBEFD9;color:#D9803A">★★★★★</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Beef Mince Tacos with Charred Capsicum</h3>
+          <p class="meta">Wed 8 Apr · 25 min</p>
+        </div>
+        <span class="text-lg text-stone-300">♡</span>
+      </div>
+      <div class="mt-2"><span class="pill">Mexican</span><span class="pill">2nd time</span><span class="pill" style="background:#FBEFD9;color:#D9803A">★★★☆☆</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Sausage &amp; Broccoli Orecchiette</h3>
+          <p class="meta">Thu 2 Apr · 25 min</p>
+        </div>
+        <span class="text-lg heart">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Italian</span><span class="pill">4th time</span><span class="pill" style="background:#FBEFD9;color:#D9803A">★★★★☆</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Lemongrass Chicken Bowls</h3>
+          <p class="meta">Mon 30 Mar · 35 min</p>
+        </div>
+        <span class="text-lg heart">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Vietnamese</span><span class="pill">5th time</span><span class="pill" style="background:#FBEFD9;color:#D9803A">★★★★★</span></div>
+    </div>
+  </div>
+
+  <p class="month-label">March 2026 · 18 meals</p>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Slow-Braised Beef Cheeks</h3>
+          <p class="meta">Sun 29 Mar · 25 min active</p>
+        </div>
+        <span class="text-lg heart">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">French</span><span class="pill">2nd time</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Thai Basil Pork Mince</h3>
+          <p class="meta">Fri 27 Mar · 20 min</p>
+        </div>
+        <span class="text-lg heart">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Thai</span><span class="pill">5th time</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Korean BBQ Chicken Thighs</h3>
+          <p class="meta">Wed 25 Mar · 30 min</p>
+        </div>
+        <span class="text-lg text-stone-300">♡</span>
+      </div>
+      <div class="mt-2"><span class="pill">Korean</span><span class="pill">1st time</span></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div class="pr-2">
+          <h3 class="font-display text-base leading-tight">Cumin Lamb Stir Fry</h3>
+          <p class="meta">Mon 23 Mar · 22 min</p>
+        </div>
+        <span class="text-lg text-stone-300">♡</span>
+      </div>
+      <div class="mt-2"><span class="pill">Chinese</span><span class="pill">1st time</span></div>
+    </div>
+  </div>
+</div>
+</body></html>

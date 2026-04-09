@@ -1,0 +1,102 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>05 · Favourites</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em}
+  .fav{background:#fff;border:1px solid #ECE6DC;border-radius:18px;display:grid;grid-template-columns:96px 1fr;gap:0;overflow:hidden;margin-bottom:.85rem}
+  .photo{background:linear-gradient(135deg,#E8DFD0,#D4C5AB);display:flex;align-items:center;justify-content:center;color:#8B7355;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase}
+  .pill{display:inline-block;padding:.15rem .55rem;border-radius:9999px;font-size:.65rem;font-weight:500;background:#EAF0E8;color:#4A6B4A;margin-right:.25rem}
+  .tab{padding:.5rem 1rem;border-radius:9999px;font-size:.8rem;font-weight:500;color:#6B6258;border:1px solid #ECE6DC;background:#fff}
+  .tab.active{background:#4A6B4A;color:#fff;border-color:#4A6B4A}
+  .meta{font-size:.7rem;color:#A8A095;margin-top:.25rem}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="index.html" class="text-xs text-stone-500">← all mockups</a>
+  <p class="num mt-6">Saved</p>
+  <h1 class="font-display text-4xl mt-1 mb-2">Favourites</h1>
+  <p class="text-stone-600 text-sm mb-6">Meals you've loved. These get suggested more often when their ingredients are in the delivery.</p>
+
+  <div class="flex gap-2 mb-6 overflow-x-auto">
+    <button class="tab active">All · 12</button>
+    <button class="tab">Chicken · 4</button>
+    <button class="tab">Beef · 3</button>
+    <button class="tab">Pork · 2</button>
+    <button class="tab">Vegetarian · 3</button>
+  </div>
+
+  <div class="fav">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="font-display text-base leading-tight">Lemongrass Chicken Bowls</h3>
+          <p class="meta">Cooked 4× · last: 3 weeks ago</p>
+        </div>
+        <span class="text-xl" style="color:#4A6B4A">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Vietnamese</span><span class="pill">35 min</span></div>
+    </div>
+  </div>
+
+  <div class="fav">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="font-display text-base leading-tight">Pan-Seared Steak &amp; Smashed Potatoes</h3>
+          <p class="meta">Cooked 6× · last: this week</p>
+        </div>
+        <span class="text-xl" style="color:#4A6B4A">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Pub classic</span><span class="pill">30 min</span></div>
+    </div>
+  </div>
+
+  <div class="fav">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="font-display text-base leading-tight">Sausage &amp; Broccoli Orecchiette</h3>
+          <p class="meta">Cooked 3× · last: 2 weeks ago</p>
+        </div>
+        <span class="text-xl" style="color:#4A6B4A">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Italian</span><span class="pill">25 min</span></div>
+    </div>
+  </div>
+
+  <div class="fav">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="font-display text-base leading-tight">Slow-Braised Beef Cheeks</h3>
+          <p class="meta">Cooked 2× · last: last month</p>
+        </div>
+        <span class="text-xl" style="color:#4A6B4A">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">French</span><span class="pill">25 min active</span></div>
+    </div>
+  </div>
+
+  <div class="fav">
+    <div class="photo">photo</div>
+    <div class="p-3.5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="font-display text-base leading-tight">Thai Basil Pork Mince</h3>
+          <p class="meta">Cooked 5× · last: 2 weeks ago</p>
+        </div>
+        <span class="text-xl" style="color:#4A6B4A">♥</span>
+      </div>
+      <div class="mt-2"><span class="pill">Thai</span><span class="pill">20 min</span></div>
+    </div>
+  </div>
+</div>
+</body></html>

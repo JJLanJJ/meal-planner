@@ -1,0 +1,119 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>03 · Recipe Card</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A}
+  .photo{height:280px;background:linear-gradient(135deg,#E8DFD0,#D4C5AB);display:flex;align-items:center;justify-content:center;color:#8B7355;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+  .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .8rem;border-radius:9999px;font-size:.75rem;font-weight:500;background:#fff;color:#1F1B16;border:1px solid #ECE6DC}
+  .step{display:grid;grid-template-columns:auto 1fr;gap:1.25rem;padding:1.5rem 0;border-bottom:1px solid #ECE6DC}
+  .step:last-child{border-bottom:none}
+  .step-num{font-family:'Fraunces',serif;font-size:2rem;line-height:1;color:#4A6B4A}
+  .ing{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid #ECE6DC;font-size:.9rem}
+  .ing:last-child{border-bottom:none}
+  .dot{display:inline-block;width:.5rem;height:.5rem;border-radius:9999px;margin-right:.5rem;vertical-align:middle}
+  .d-fridge{background:#4A6B4A}
+  .d-pantry{background:#B8A582}
+  .d-extra{background:#D9803A}
+  .nav{position:sticky;top:0;background:rgba(250,247,242,.92);backdrop-filter:blur(8px);border-bottom:1px solid #ECE6DC;z-index:10}
+  .child-note{background:#FBEFD9;border-left:3px solid #D9803A;padding:.6rem .8rem;margin-top:.5rem;font-size:.8rem;color:#8B5A1F;border-radius:0 6px 6px 0}
+</style>
+</head><body class="min-h-screen pb-32">
+
+<div class="nav">
+  <div class="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
+    <a href="02-suggestions.html" class="text-sm text-stone-500">←</a>
+    <div class="flex gap-1">
+      <span class="w-6 h-1 rounded-full bg-stone-300"></span>
+      <span class="w-6 h-1 rounded-full bg-accent" style="background:#4A6B4A"></span>
+      <span class="w-6 h-1 rounded-full bg-stone-300"></span>
+      <span class="w-6 h-1 rounded-full bg-stone-300"></span>
+      <span class="w-6 h-1 rounded-full bg-stone-300"></span>
+    </div>
+    <span class="text-xs text-stone-500">2 / 5</span>
+  </div>
+</div>
+
+<div class="max-w-md mx-auto">
+  <div class="photo">photo</div>
+
+  <div class="px-5 pt-6">
+    <p class="num text-xs uppercase tracking-widest mb-2">Tuesday · Chef's choice</p>
+    <h1 class="font-display text-4xl leading-tight mb-3">Pan-Seared Steak with Smashed Potatoes</h1>
+    <p class="text-stone-600 text-sm mb-5">Rump cooked to medium-rare with a garlic-butter baste, crispy smashed potatoes and charred broccoli with chilli &amp; lemon.</p>
+
+    <div class="flex flex-wrap gap-2 mb-8">
+      <span class="pill">⏱ 30 min total</span>
+      <span class="pill">10 prep</span>
+      <span class="pill">20 cook</span>
+      <span class="pill">2 adults + 1 child</span>
+      <span class="pill">Medium</span>
+    </div>
+
+    <h2 class="font-display text-xl mb-3">Ingredients</h2>
+    <div class="bg-white border border-stone-200 rounded-2xl p-4 mb-3">
+      <div class="ing"><span><span class="dot d-fridge"></span>Rump steak</span><span class="text-stone-500">500g</span></div>
+      <div class="ing"><span><span class="dot d-fridge"></span>Baby potatoes</span><span class="text-stone-500">500g</span></div>
+      <div class="ing"><span><span class="dot d-fridge"></span>Broccoli</span><span class="text-stone-500">1 head</span></div>
+      <div class="ing"><span><span class="dot d-pantry"></span>Butter</span><span class="text-stone-500">50g</span></div>
+      <div class="ing"><span><span class="dot d-pantry"></span>Garlic</span><span class="text-stone-500">4 cloves</span></div>
+      <div class="ing"><span><span class="dot d-pantry"></span>Olive oil, salt, pepper</span><span class="text-stone-500">to taste</span></div>
+      <div class="ing"><span><span class="dot d-extra"></span>Lemon</span><span class="text-stone-500">1</span></div>
+    </div>
+    <div class="flex gap-4 text-xs text-stone-500 mb-10">
+      <span><span class="dot d-fridge"></span>From delivery</span>
+      <span><span class="dot d-pantry"></span>Pantry</span>
+      <span><span class="dot d-extra"></span>To buy</span>
+    </div>
+
+    <h2 class="font-display text-xl mb-2">Method</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <p class="text-xs num uppercase tracking-widest mb-1">5 min</p>
+        <p class="text-sm leading-relaxed">Take the steak out of the fridge to come to room temperature. Heat oven to 220°C. Bring a large pot of salted water to the boil.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <p class="text-xs num uppercase tracking-widest mb-1">12 min</p>
+        <p class="text-sm leading-relaxed">Boil the potatoes until tender (about 12 min). Drain, transfer to a baking tray, smash gently with the bottom of a glass, drizzle generously with olive oil and salt. Roast 15 min until crisp.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <p class="text-xs num uppercase tracking-widest mb-1">5 min</p>
+        <p class="text-sm leading-relaxed">Cut the broccoli into florets. Toss with olive oil, salt, a pinch of chilli flakes, and add to the tray with the potatoes for the last 8 min of roasting.</p>
+        <div class="child-note">For the child portion: skip the chilli flakes on her broccoli.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>
+        <p class="text-xs num uppercase tracking-widest mb-1">6 min</p>
+        <p class="text-sm leading-relaxed">Pat steak dry, season heavily. Heat a heavy pan over high heat with a splash of oil. Sear steak 3 min per side. Add butter and crushed garlic, baste for 30 seconds, then rest on a board for 5 min.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div>
+        <p class="text-xs num uppercase tracking-widest mb-1">2 min</p>
+        <p class="text-sm leading-relaxed">Slice steak against the grain. Plate with potatoes and broccoli. Squeeze over lemon, spoon over the resting juices.</p>
+        <div class="child-note">Child portion: ~120g steak, smaller potato &amp; broccoli serve.</div>
+      </div>
+    </div>
+
+    <div class="mt-10 mb-4 flex flex-col gap-3">
+      <button style="background:#4A6B4A;color:#fff;padding:1.1rem 1.5rem;border-radius:9999px;font-weight:500;font-size:1rem;display:flex;align-items:center;justify-content:center;gap:.5rem">✓ Mark as cooked</button>
+      <button style="background:transparent;color:#6B6258;padding:.85rem;font-size:.85rem">♡ Save to favourites</button>
+    </div>
+    <p class="text-xs text-stone-400 text-center mb-8">Marking as cooked moves this to your history and lets the chef avoid suggesting it next week.</p>
+  </div>
+</div>
+</body></html>

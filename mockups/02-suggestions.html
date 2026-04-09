@@ -1,0 +1,123 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>02 · Suggestions</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.8rem}
+  .card{background:#fff;border:1px solid #ECE6DC;border-radius:20px;overflow:hidden}
+  .photo{height:160px;background:linear-gradient(135deg,#E8DFD0,#D4C5AB);display:flex;align-items:center;justify-content:center;color:#8B7355;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+  .pill{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:9999px;font-size:.7rem;font-weight:500;background:#F1ECE2;color:#6B6258}
+  .pill-accent{background:#EAF0E8;color:#4A6B4A}
+  .btn{background:#4A6B4A;color:#fff;padding:.95rem 1.5rem;border-radius:9999px;font-weight:500;width:100%}
+  .btn-ghost{background:transparent;color:#6B6258;border:1px solid #ECE6DC;padding:.5rem 1rem;border-radius:9999px;font-size:.8rem;font-weight:500}
+  .day-tag{font-family:'Fraunces',serif;font-size:.75rem;color:#4A6B4A;text-transform:uppercase;letter-spacing:.1em}
+  .heart{width:36px;height:36px;border-radius:9999px;background:#fff;display:flex;align-items:center;justify-content:center;border:1px solid #ECE6DC;position:absolute;top:12px;right:12px}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="01-ingredients.html" class="text-xs text-stone-500">← back</a>
+  <p class="num mt-6">Step 3 of 4</p>
+  <h1 class="font-display text-4xl mt-1 mb-2">5 meal ideas</h1>
+  <p class="text-stone-600 text-sm mb-3">One per night you've selected. Tap "swap" on anything you'd rather not cook. Green = from your delivery, terracotta = needs buying.</p>
+  <div class="flex gap-3 text-xs text-stone-500 mb-8 flex-wrap">
+    <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#4A6B4A"></span>delivery</span>
+    <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#B8A582"></span>pantry</span>
+    <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#D9803A"></span>to buy</span>
+  </div>
+
+  <!-- meal 1 -->
+  <div class="card mb-5">
+    <div class="photo relative">photo<div class="heart">♡</div></div>
+    <div class="p-5">
+      <p class="day-tag mb-1">Monday · Vietnamese</p>
+      <h3 class="font-display text-2xl leading-tight mb-2">Lemongrass Chicken with Pickled Carrot Slaw</h3>
+      <p class="text-sm text-stone-600 mb-4">Marinated chicken thighs grilled until charred, served over jasmine rice with a quick pickled carrot &amp; coriander salad.</p>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="pill">⏱ 35 min</span>
+        <span class="pill-accent pill">chicken thighs</span>
+        <span class="pill-accent pill">carrots</span>
+        <span class="pill-accent pill">coriander</span>
+        <span class="pill-accent pill">limes</span>
+        <span class="pill" style="background:#FBEFD9;color:#A8722A;border:1px solid #F2D9A8">+ jasmine rice</span>
+        <span class="pill" style="background:#FBEFD9;color:#A8722A;border:1px solid #F2D9A8">+ fish sauce</span>
+      </div>
+      <div class="flex gap-2"><button class="btn-ghost flex-1">Swap</button><button class="btn-ghost flex-1">Details</button></div>
+    </div>
+  </div>
+
+  <!-- meal 2 -->
+  <div class="card mb-5">
+    <div class="photo relative">photo<div class="heart" style="background:#4A6B4A;color:#fff;border-color:#4A6B4A">♥</div></div>
+    <div class="p-5">
+      <p class="day-tag mb-1">Tuesday · Chef's choice</p>
+      <h3 class="font-display text-2xl leading-tight mb-2">Pan-Seared Steak with Smashed Potatoes</h3>
+      <p class="text-sm text-stone-600 mb-4">Rump cooked to medium-rare with a garlic-butter baste, crispy smashed potatoes and charred broccoli.</p>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="pill">⏱ 30 min</span>
+        <span class="pill-accent pill">rump steak</span>
+        <span class="pill-accent pill">potatoes</span>
+        <span class="pill-accent pill">broccoli</span>
+        <span class="pill" style="background:#FBEFD9;color:#A8722A;border:1px solid #F2D9A8">+ lemon</span>
+      </div>
+      <div class="flex gap-2"><button class="btn-ghost flex-1">Swap</button><button class="btn-ghost flex-1">Details</button></div>
+    </div>
+  </div>
+
+  <!-- meal 3 -->
+  <div class="card mb-5">
+    <div class="photo">photo</div>
+    <div class="p-5">
+      <p class="day-tag mb-1">Wednesday · Mexican</p>
+      <h3 class="font-display text-2xl leading-tight mb-2">Beef Mince Tacos with Charred Capsicum</h3>
+      <p class="text-sm text-stone-600 mb-4">Smoky cumin-spiced mince in soft tortillas with blackened capsicum, lime crema and quick salsa.</p>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="pill">⏱ 25 min</span>
+        <span class="pill-accent pill">beef mince</span>
+        <span class="pill-accent pill">capsicum</span>
+        <span class="pill-accent pill">limes</span>
+        <span class="pill" style="background:#FBEFD9;color:#A8722A;border:1px solid #F2D9A8">+ tortillas</span>
+      </div>
+      <div class="flex gap-2"><button class="btn-ghost flex-1">Swap</button><button class="btn-ghost flex-1">Details</button></div>
+    </div>
+  </div>
+
+  <!-- meal 4 -->
+  <div class="card mb-5">
+    <div class="photo">photo</div>
+    <div class="p-5">
+      <p class="day-tag mb-1">Thursday · Italian</p>
+      <h3 class="font-display text-2xl leading-tight mb-2">Sausage &amp; Broccoli Orecchiette</h3>
+      <p class="text-sm text-stone-600 mb-4">Pork sausage meat browned with chilli and garlic, tossed through pasta with broccoli florets and parmesan.</p>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="pill">⏱ 25 min</span>
+        <span class="pill-accent pill">pork sausages</span>
+        <span class="pill-accent pill">broccoli</span>
+        <span class="pill" style="background:#FBEFD9;color:#A8722A;border:1px solid #F2D9A8">+ orecchiette</span>
+      </div>
+      <div class="flex gap-2"><button class="btn-ghost flex-1">Swap</button><button class="btn-ghost flex-1">Details</button></div>
+    </div>
+  </div>
+
+  <!-- meal 5 -->
+  <div class="card mb-6">
+    <div class="photo">photo</div>
+    <div class="p-5">
+      <p class="day-tag mb-1">Friday · Chef's choice</p>
+      <h3 class="font-display text-2xl leading-tight mb-2">Slow-Braised Chicken with Root Veg</h3>
+      <p class="text-sm text-stone-600 mb-4">Chicken thighs braised low and slow with carrots and potatoes — 20 min hands-on, the rest is the oven's job.</p>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="pill">⏱ 20 min active</span>
+        <span class="pill-accent pill">chicken thighs</span>
+        <span class="pill-accent pill">carrots</span>
+        <span class="pill-accent pill">potatoes</span>
+      </div>
+      <div class="flex gap-2"><button class="btn-ghost flex-1">Swap</button><button class="btn-ghost flex-1">Details</button></div>
+    </div>
+  </div>
+
+  <a href="03-recipe.html" class="btn block text-center">Generate 5 recipe cards →</a>
+</div>
+</body></html>

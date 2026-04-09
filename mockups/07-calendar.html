@@ -1,0 +1,120 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>07 · Calendar</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.8rem}
+  .card{background:#fff;border:1px solid #ECE6DC;border-radius:18px}
+  .btn{background:#4A6B4A;color:#fff;padding:.95rem 1.5rem;border-radius:9999px;font-weight:500;width:100%}
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:.7rem;color:#A8A095;text-transform:uppercase;letter-spacing:.08em;padding:0 .5rem .6rem}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:.35rem;padding:.5rem}
+  .day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:1rem;border-radius:12px;color:#1F1B16;position:relative;cursor:pointer}
+  .day.muted{color:#D4CCBE}
+  .day.selected{background:#4A6B4A;color:#fff}
+  .day.today{outline:1.5px solid #C8BFB1}
+  .day.has-cuisine::after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:9999px;background:#fff}
+  .day.selected.today{outline-color:#4A6B4A}
+  .month-nav{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem 1rem}
+  .month-nav h3{font-family:'Fraunces',serif;font-size:1.35rem}
+  .nav-btn{width:34px;height:34px;border-radius:9999px;background:#FAF7F2;border:1px solid #ECE6DC;display:flex;align-items:center;justify-content:center;color:#4A6B4A}
+  .selected-row{display:grid;grid-template-columns:auto 1fr auto;gap:.85rem;align-items:center;padding:.85rem 1rem;border-bottom:1px solid #ECE6DC}
+  .selected-row:last-child{border-bottom:none}
+  .pill-date{font-family:'Fraunces',serif;font-size:.85rem;color:#4A6B4A;background:#EAF0E8;padding:.3rem .6rem;border-radius:8px;text-align:center;min-width:48px}
+  .pill-date small{display:block;font-size:.6rem;color:#6B6258;text-transform:uppercase;letter-spacing:.05em;font-family:'Inter',sans-serif}
+  .cuisine-pill{font-size:.85rem;color:#4A6B4A;text-align:right}
+  .x-btn{color:#A8A095;font-size:1.1rem;padding:0 .3rem}
+  .modal{position:fixed;inset:0;background:rgba(31,27,22,.4);display:flex;align-items:flex-end;justify-content:center}
+  .sheet{background:#FAF7F2;border-radius:24px 24px 0 0;width:100%;max-width:28rem;padding:1.5rem 1.25rem 2rem;border-top:1px solid #ECE6DC}
+  .opt{display:block;width:100%;text-align:left;padding:.85rem 1rem;border-radius:12px;font-size:.95rem;background:#fff;border:1px solid #ECE6DC;margin-bottom:.4rem}
+  .opt.active{background:#4A6B4A;color:#fff;border-color:#4A6B4A}
+  .opt-input{width:100%;background:#fff;border:1px solid #ECE6DC;border-radius:12px;padding:.85rem 1rem;font-size:.95rem;font-family:inherit;outline:none}
+  .opt-input:focus{border-color:#4A6B4A}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="01-ingredients.html" class="text-xs text-stone-500">← back</a>
+  <p class="num mt-6">Step 2 of 4</p>
+  <h1 class="font-display text-4xl mt-1 mb-2">Pick your cooking nights</h1>
+  <p class="text-stone-600 text-sm mb-6">Tap any date to schedule a meal. Plan ahead up to a month — pick a cuisine for each night, or leave it to the chef.</p>
+
+  <div class="card mb-5">
+    <div class="month-nav">
+      <button class="nav-btn">‹</button>
+      <h3>April 2026</h3>
+      <button class="nav-btn">›</button>
+    </div>
+    <div class="cal-head">
+      <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+    </div>
+    <div class="cal">
+      <!-- week 1 -->
+      <div class="day muted">30</div><div class="day muted">31</div>
+      <div class="day">1</div><div class="day">2</div>
+      <div class="day">3</div><div class="day">4</div><div class="day">5</div>
+      <!-- week 2 -->
+      <div class="day">6</div><div class="day selected has-cuisine">7</div>
+      <div class="day selected has-cuisine">8</div><div class="day today">9</div>
+      <div class="day selected has-cuisine">10</div><div class="day">11</div><div class="day">12</div>
+      <!-- week 3 -->
+      <div class="day selected has-cuisine">13</div><div class="day">14</div>
+      <div class="day selected has-cuisine">15</div><div class="day">16</div>
+      <div class="day selected">17</div><div class="day">18</div><div class="day">19</div>
+      <!-- week 4 -->
+      <div class="day">20</div><div class="day selected has-cuisine">21</div>
+      <div class="day">22</div><div class="day selected has-cuisine">23</div>
+      <div class="day">24</div><div class="day">25</div><div class="day">26</div>
+      <!-- week 5 -->
+      <div class="day">27</div><div class="day">28</div>
+      <div class="day selected">29</div><div class="day">30</div>
+      <div class="day muted">1</div><div class="day muted">2</div><div class="day muted">3</div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between mb-3">
+    <p class="num">9 nights selected</p>
+    <button class="text-xs text-stone-500">Clear all</button>
+  </div>
+
+  <div class="card mb-8">
+    <div class="selected-row"><div class="pill-date">7<small>Tue</small></div><div class="cuisine-pill">Vietnamese ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">8<small>Wed</small></div><div class="cuisine-pill">Mexican ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">10<small>Fri</small></div><div class="cuisine-pill">Italian ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">13<small>Mon</small></div><div class="cuisine-pill" style="color:#C65A3A">"Korean BBQ" ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">15<small>Wed</small></div><div class="cuisine-pill">Thai ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">17<small>Fri</small></div><div class="cuisine-pill text-stone-400">No preference ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">21<small>Tue</small></div><div class="cuisine-pill">Indian ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">23<small>Thu</small></div><div class="cuisine-pill" style="color:#C65A3A">"Slow-cook comfort food" ›</div><button class="x-btn">×</button></div>
+    <div class="selected-row"><div class="pill-date">29<small>Wed</small></div><div class="cuisine-pill text-stone-400">No preference ›</div><button class="x-btn">×</button></div>
+  </div>
+
+  <a href="02-suggestions.html" class="btn block text-center">Generate 9 meal ideas →</a>
+</div>
+
+<!-- Bottom sheet (cuisine picker) -->
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')document.getElementById('modal').style.display='none'">
+  <div class="sheet">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-display text-2xl">Mon, Apr 13</h3>
+      <button class="x-btn text-xl" onclick="document.getElementById('modal').style.display='none'">×</button>
+    </div>
+    <p class="num mb-3">Cuisine</p>
+    <button class="opt">No preference</button>
+    <button class="opt">Vietnamese</button>
+    <button class="opt">Chinese</button>
+    <button class="opt">Thai</button>
+    <button class="opt">Italian</button>
+    <button class="opt">Mexican</button>
+    <button class="opt">Indian</button>
+    <button class="opt">Japanese</button>
+    <button class="opt">Middle Eastern</button>
+    <button class="opt">French</button>
+
+    <p class="num mt-5 mb-2">Or describe your own</p>
+    <input class="opt-input" placeholder="e.g. Korean BBQ, comfort food, light &amp; fresh…" value="Korean BBQ">
+    <button class="btn mt-4" onclick="document.getElementById('modal').style.display='none'">Save</button>
+  </div>
+</div>
+</body></html>

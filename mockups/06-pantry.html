@@ -1,0 +1,100 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06 · Pantry</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em}
+  .card{background:#fff;border:1px solid #ECE6DC;border-radius:18px}
+  .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .85rem;border-radius:9999px;font-size:.85rem;background:#fff;border:1px solid #ECE6DC;margin:0 .3rem .5rem 0}
+  .chip-x{color:#A8A095;font-size:.95rem}
+  .chip:hover .chip-x{color:#C65A3A}
+  .add{background:#FAF7F2;border:1px dashed #C8BFB1;border-radius:9999px;padding:.45rem .9rem;font-size:.85rem;color:#6B6258;display:inline-flex;align-items:center;gap:.4rem}
+  .row-input{display:flex;gap:.5rem;margin-top:.85rem}
+  .row-input input{flex:1;background:#FAF7F2;border:1px solid #ECE6DC;border-radius:10px;padding:.6rem .9rem;font-size:.9rem;font-family:inherit;outline:none}
+  .row-input input:focus{border-color:#4A6B4A;background:#fff}
+  .row-input button{background:#4A6B4A;color:#fff;border-radius:9999px;width:38px;height:38px;font-size:1.1rem;flex-shrink:0}
+  .info{background:#EAF0E8;border:1px solid #D4E0D0;border-radius:14px;padding:.85rem 1rem;font-size:.82rem;color:#3A5A3A;display:flex;gap:.6rem;align-items:flex-start}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="index.html" class="text-xs text-stone-500">← all mockups</a>
+  <p class="num mt-6">Settings</p>
+  <h1 class="font-display text-4xl mt-1 mb-2">My pantry</h1>
+  <p class="text-stone-600 text-sm mb-5">What you always have at home. The chef will assume these are available and only add genuinely missing items to your shopping list.</p>
+
+  <div class="info mb-6">
+    <span>✓</span>
+    <span>You currently have <strong>34 items</strong> in your pantry. Last updated 2 weeks ago.</span>
+  </div>
+
+  <!-- Oils & Vinegars -->
+  <p class="num mb-2">Oils &amp; Vinegars · 5</p>
+  <div class="card p-4 mb-4">
+    <span class="chip">Olive oil <span class="chip-x">×</span></span>
+    <span class="chip">Sesame oil <span class="chip-x">×</span></span>
+    <span class="chip">Vegetable oil <span class="chip-x">×</span></span>
+    <span class="chip">Balsamic vinegar <span class="chip-x">×</span></span>
+    <span class="chip">Rice wine vinegar <span class="chip-x">×</span></span>
+    <div class="row-input"><input placeholder="Add an oil or vinegar…"><button>+</button></div>
+  </div>
+
+  <!-- Sauces & Condiments -->
+  <p class="num mb-2">Sauces &amp; Condiments · 8</p>
+  <div class="card p-4 mb-4">
+    <span class="chip">Soy sauce <span class="chip-x">×</span></span>
+    <span class="chip">Fish sauce <span class="chip-x">×</span></span>
+    <span class="chip">Oyster sauce <span class="chip-x">×</span></span>
+    <span class="chip">Sriracha <span class="chip-x">×</span></span>
+    <span class="chip">Dijon mustard <span class="chip-x">×</span></span>
+    <span class="chip">Tomato paste <span class="chip-x">×</span></span>
+    <span class="chip">Worcestershire <span class="chip-x">×</span></span>
+    <span class="chip">Honey <span class="chip-x">×</span></span>
+    <div class="row-input"><input placeholder="Add a sauce…"><button>+</button></div>
+  </div>
+
+  <!-- Herbs & Spices -->
+  <p class="num mb-2">Herbs &amp; Spices · 12</p>
+  <div class="card p-4 mb-4">
+    <span class="chip">Salt <span class="chip-x">×</span></span>
+    <span class="chip">Black pepper <span class="chip-x">×</span></span>
+    <span class="chip">Cumin <span class="chip-x">×</span></span>
+    <span class="chip">Smoked paprika <span class="chip-x">×</span></span>
+    <span class="chip">Chilli flakes <span class="chip-x">×</span></span>
+    <span class="chip">Oregano <span class="chip-x">×</span></span>
+    <span class="chip">Cinnamon <span class="chip-x">×</span></span>
+    <span class="chip">Bay leaves <span class="chip-x">×</span></span>
+    <span class="chip">Garam masala <span class="chip-x">×</span></span>
+    <span class="chip">Curry powder <span class="chip-x">×</span></span>
+    <span class="chip">Turmeric <span class="chip-x">×</span></span>
+    <span class="chip">Five spice <span class="chip-x">×</span></span>
+    <div class="row-input"><input placeholder="Add a herb or spice…"><button>+</button></div>
+  </div>
+
+  <!-- Aromatics & Fresh -->
+  <p class="num mb-2">Aromatics (always have) · 4</p>
+  <div class="card p-4 mb-4">
+    <span class="chip">Garlic <span class="chip-x">×</span></span>
+    <span class="chip">Brown onions <span class="chip-x">×</span></span>
+    <span class="chip">Ginger <span class="chip-x">×</span></span>
+    <span class="chip">Lemons <span class="chip-x">×</span></span>
+    <div class="row-input"><input placeholder="Add an aromatic…"><button>+</button></div>
+  </div>
+
+  <!-- Dry Goods -->
+  <p class="num mb-2">Dry Goods · 5</p>
+  <div class="card p-4 mb-4">
+    <span class="chip">Plain flour <span class="chip-x">×</span></span>
+    <span class="chip">Sugar <span class="chip-x">×</span></span>
+    <span class="chip">Jasmine rice <span class="chip-x">×</span></span>
+    <span class="chip">Spaghetti <span class="chip-x">×</span></span>
+    <span class="chip">Cornflour <span class="chip-x">×</span></span>
+    <div class="row-input"><input placeholder="Add a dry good…"><button>+</button></div>
+  </div>
+
+  <!-- New category -->
+  <button class="add">+ Add a category</button>
+</div>
+</body></html>

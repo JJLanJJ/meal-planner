@@ -1,0 +1,168 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>09 · Plans</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em}
+  .card{background:#fff;border:1px solid #ECE6DC;border-radius:20px}
+  .meal-row{display:grid;grid-template-columns:auto auto 1fr auto;gap:.85rem;align-items:center;padding:.85rem 1rem;border-bottom:1px solid #ECE6DC}
+  .cook-check{width:24px;height:24px;border-radius:9999px;border:1.5px solid #C8BFB1;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem}
+  .cook-check.done{background:#4A6B4A;border-color:#4A6B4A;color:#fff}
+  .meal-row:last-child{border-bottom:none}
+  .date-pill{font-family:'Fraunces',serif;font-size:.85rem;background:#EAF0E8;color:#4A6B4A;padding:.3rem .55rem;border-radius:8px;text-align:center;min-width:46px;line-height:1.1}
+  .date-pill small{display:block;font-size:.55rem;color:#6B6258;text-transform:uppercase;letter-spacing:.05em;font-family:'Inter',sans-serif;margin-top:.1rem}
+  .status-cooked{color:#4A6B4A;font-size:.75rem;display:flex;align-items:center;gap:.3rem}
+  .status-planned{color:#A8A095;font-size:.75rem}
+  .status-skipped{color:#A8A095;font-size:.75rem;text-decoration:line-through}
+  .meal-title{font-size:.92rem}
+  .meal-title.cooked{color:#A8A095}
+  .btn-archive{background:transparent;color:#C65A3A;border:1px solid #C65A3A;padding:.7rem 1.1rem;border-radius:9999px;font-size:.85rem;font-weight:500}
+  .btn{background:#4A6B4A;color:#fff;padding:.85rem 1.4rem;border-radius:9999px;font-weight:500}
+  .progress{height:6px;background:#F1ECE2;border-radius:9999px;overflow:hidden;margin-top:.5rem;margin-bottom:.85rem}
+  .progress-bar{height:100%;background:#4A6B4A;border-radius:9999px}
+  .plan-head{padding:1.25rem 1.25rem 0}
+  .modal{position:fixed;inset:0;background:rgba(31,27,22,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+  .sheet{background:#FAF7F2;border-radius:24px 24px 0 0;width:100%;max-width:28rem;padding:1.75rem 1.25rem 2rem;border-top:1px solid #ECE6DC}
+  .stars{display:flex;gap:.5rem;justify-content:center;margin:1.5rem 0}
+  .star{font-size:2.5rem;color:#E8DFD0;cursor:pointer}
+  .star.on{color:#D9803A}
+  .input{width:100%;background:#fff;border:1px solid #ECE6DC;border-radius:14px;padding:.85rem 1rem;font-size:.9rem;font-family:inherit;outline:none;resize:none}
+  .input:focus{border-color:#4A6B4A}
+  .archived-row{background:#fff;border:1px solid #ECE6DC;border-radius:14px;padding:.95rem 1.1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.85rem}
+  .star-row{color:#D9803A;font-size:.85rem}
+</style>
+</head><body class="min-h-screen pb-32">
+<div class="max-w-md mx-auto px-5 pt-10">
+  <a href="00-home.html" class="text-xs text-stone-500">← home</a>
+  <p class="num mt-6">Plans</p>
+  <h1 class="font-display text-4xl mt-1 mb-6">All plans</h1>
+
+  <div class="flex gap-2 mb-5">
+    <button class="btn">Active · 2</button>
+    <button class="btn-archive">Archived · 14</button>
+  </div>
+
+  <!-- PLAN A -->
+  <div class="card mb-5">
+    <div class="plan-head">
+      <p class="num mb-1">Plan · created Apr 5</p>
+      <h2 class="font-display text-2xl leading-tight flex items-center gap-2">Easter week <button class="text-stone-300 text-base" title="Rename">✎</button></h2>
+      <p class="text-xs text-stone-500 mt-1">3 of 5 meals cooked · 2 to go</p>
+      <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+    </div>
+    <div>
+      <div class="meal-row">
+        <div class="cook-check done">✓</div>
+        <div class="date-pill">5<small>Sun</small></div>
+        <div><p class="meal-title cooked">Lemongrass Chicken Bowls</p><p class="status-cooked">✓ Cooked · ♥ favourited</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="meal-row">
+        <div class="cook-check done">✓</div>
+        <div class="date-pill">6<small>Mon</small></div>
+        <div><p class="meal-title cooked">Beef Mince Tacos</p><p class="status-cooked">✓ Cooked</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="meal-row">
+        <div class="cook-check done">✓</div>
+        <div class="date-pill">8<small>Wed</small></div>
+        <div><p class="meal-title cooked">Sausage &amp; Broccoli Orecchiette</p><p class="status-cooked">✓ Cooked</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="meal-row">
+        <div class="cook-check"></div>
+        <div class="date-pill">10<small>Fri</small></div>
+        <div><p class="meal-title">Pan-Seared Steak &amp; Smashed Potatoes</p><p class="status-planned">Planned · tonight</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="meal-row">
+        <div class="cook-check"></div>
+        <div class="date-pill">11<small>Sat</small></div>
+        <div><p class="meal-title">Slow-Braised Chicken</p><p class="status-planned">Planned</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+    </div>
+    <div class="p-4 border-t border-stone-200">
+      <button class="btn-archive w-full" onclick="document.getElementById('archiveModal').style.display='flex'">Archive this plan</button>
+    </div>
+  </div>
+
+  <!-- PLAN B -->
+  <div class="card mb-5">
+    <div class="plan-head">
+      <p class="num mb-1">Plan · created Apr 9</p>
+      <h2 class="font-display text-2xl leading-tight flex items-center gap-2">Plan from Apr 9 <button class="text-stone-300 text-base" title="Rename">✎</button></h2>
+      <p class="text-xs text-stone-500 mt-1">0 of 9 meals cooked · starts Sun</p>
+      <div class="progress"><div class="progress-bar" style="width:0%"></div></div>
+    </div>
+    <div>
+      <div class="meal-row">
+        <div class="cook-check"></div>
+        <div class="date-pill">12<small>Sun</small></div>
+        <div><p class="meal-title">Vietnamese Beef Pho</p><p class="status-planned">Planned</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="meal-row">
+        <div class="cook-check"></div>
+        <div class="date-pill">13<small>Mon</small></div>
+        <div><p class="meal-title">Korean BBQ Chicken Thighs</p><p class="status-planned">Planned · custom cuisine</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="meal-row">
+        <div class="cook-check"></div>
+        <div class="date-pill">15<small>Wed</small></div>
+        <div><p class="meal-title">Thai Basil Pork Mince</p><p class="status-planned">Planned</p></div>
+        <span class="text-stone-300">›</span>
+      </div>
+      <div class="text-center text-xs text-stone-400 py-3">+ 6 more meals</div>
+    </div>
+  </div>
+
+  <!-- ARCHIVED -->
+  <p class="num mb-3 mt-8">Recently archived</p>
+  <div class="archived-row">
+    <div>
+      <p class="font-display text-base">Plan · Mar 28 box</p>
+      <p class="text-xs text-stone-500">5 meals · archived 3 days ago</p>
+    </div>
+    <div class="ml-auto star-row">★★★★★</div>
+  </div>
+  <div class="archived-row">
+    <div>
+      <p class="font-display text-base">Plan · Mar 21 box</p>
+      <p class="text-xs text-stone-500">6 meals · archived 10 days ago</p>
+    </div>
+    <div class="ml-auto star-row">★★★★<span style="color:#E8DFD0">★</span></div>
+  </div>
+  <div class="archived-row">
+    <div>
+      <p class="font-display text-base">Plan · Mar 14 box</p>
+      <p class="text-xs text-stone-500">5 meals · archived 17 days ago</p>
+    </div>
+    <div class="ml-auto star-row">★★★<span style="color:#E8DFD0">★★</span></div>
+  </div>
+</div>
+
+<!-- ARCHIVE MODAL -->
+<div class="modal" id="archiveModal" style="display:none" onclick="if(event.target.id==='archiveModal')this.style.display='none'">
+  <div class="sheet">
+    <p class="num text-center">Archiving</p>
+    <h2 class="font-display text-3xl text-center mt-1 mb-2">How was this plan?</h2>
+    <p class="text-stone-600 text-sm text-center mb-2">Rate it overall — we'll use this to filter your history and tune future suggestions.</p>
+    <div class="stars">
+      <span class="star on">★</span>
+      <span class="star on">★</span>
+      <span class="star on">★</span>
+      <span class="star on">★</span>
+      <span class="star">★</span>
+    </div>
+    <p class="text-center text-sm text-stone-500 mb-4">4 out of 5 stars</p>
+    <textarea class="input mb-4" rows="3" placeholder="Optional notes (what worked, what didn't)…"></textarea>
+    <button class="btn w-full" onclick="document.getElementById('archiveModal').style.display='none'">Archive plan</button>
+    <button class="text-stone-500 text-sm w-full mt-3" onclick="document.getElementById('archiveModal').style.display='none'">Cancel</button>
+  </div>
+</div>
+</body></html>

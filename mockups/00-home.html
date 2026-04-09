@@ -1,0 +1,240 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>00 · Home</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em}
+  .card{background:#fff;border:1px solid #ECE6DC;border-radius:20px}
+  .photo{background:linear-gradient(135deg,#E8DFD0,#D4C5AB);display:flex;align-items:center;justify-content:center;color:#8B7355;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase}
+  .pill{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:9999px;font-size:.7rem;font-weight:500;background:#F1ECE2;color:#6B6258}
+  .btn{background:#4A6B4A;color:#fff;padding:.95rem 1.5rem;border-radius:9999px;font-weight:500;width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem}
+  .badge{background:#C65A3A;color:#fff;border-radius:9999px;font-size:.65rem;font-weight:600;padding:.1rem .5rem;margin-left:.4rem}
+  .nav-tile{background:#fff;border:1px solid #ECE6DC;border-radius:16px;padding:1rem;text-align:left;display:block}
+  .plan-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border-bottom:1px solid #ECE6DC}
+  .plan-row:last-child{border-bottom:none}
+  .progress{height:6px;background:#F1ECE2;border-radius:9999px;overflow:hidden;margin-top:.4rem}
+  .progress-bar{height:100%;background:#4A6B4A;border-radius:9999px}
+
+  /* Sidebar */
+  .sidebar{background:#fff;border-right:1px solid #ECE6DC;width:260px;padding:1.75rem 1rem;position:fixed;left:0;top:0;bottom:0;z-index:40;transition:transform .25s ease}
+  .sidebar h2{font-family:'Fraunces',serif;font-size:1.35rem;padding:0 .75rem 1.25rem;border-bottom:1px solid #ECE6DC;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+  .nav-link{display:flex;align-items:center;gap:.75rem;padding:.65rem .85rem;border-radius:10px;color:#6B6258;font-size:.92rem;margin-bottom:.15rem}
+  .nav-link:hover{background:#FAF7F2;color:#1F1B16}
+  .nav-link.active{background:#EAF0E8;color:#4A6B4A;font-weight:500}
+  .nav-section{font-family:'Fraunces',serif;font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:#A8A095;padding:1rem .85rem .4rem}
+  .nav-icon{width:18px;text-align:center;flex-shrink:0}
+  .sidebar-overlay{position:fixed;inset:0;background:rgba(31,27,22,.4);z-index:30;display:none}
+
+  /* Mobile hamburger */
+  .mobile-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid #ECE6DC;background:#FAF7F2;position:sticky;top:0;z-index:20}
+  .hamburger{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid #ECE6DC;display:flex;align-items:center;justify-content:center}
+
+  /* Layout */
+  .content{padding:1.5rem 1.25rem 8rem;max-width:30rem;margin:0 auto}
+
+  @media (min-width:1024px){
+    .mobile-bar{display:none}
+    .sidebar{transform:translateX(0);width:76px;padding:1.5rem .75rem;overflow:hidden;transition:width .2s ease}
+    .sidebar:hover{width:260px;padding:1.75rem 1rem;box-shadow:0 12px 40px -16px rgba(31,27,22,.18)}
+    /* COLLAPSED state */
+    .sidebar:not(:hover) h2{justify-content:center;padding:0 0 1.25rem;font-size:0;border-bottom:1px solid #ECE6DC}
+    .sidebar:not(:hover) h2 span:first-child{font-size:1.6rem}
+    .sidebar:not(:hover) .nav-section{height:0;padding:0;margin:0;overflow:hidden;border-top:1px solid #ECE6DC;margin-top:.5rem;padding-top:.5rem}
+    .sidebar:not(:hover) .nav-link{justify-content:center;padding:.7rem 0;gap:0;font-size:0;border-radius:12px}
+    .sidebar:not(:hover) .nav-link .nav-icon{font-size:1.15rem;width:auto}
+    .sidebar:not(:hover) .nav-link .badge{display:none}
+    .sidebar:not(:hover) > div:last-child{left:0 !important;right:0 !important;text-align:center}
+    .sidebar:not(:hover) > div:last-child .nav-link{font-size:0 !important;justify-content:center;padding:.7rem 0}
+    .sidebar:not(:hover) > div:last-child .nav-link::before{content:"←";font-size:1.1rem;color:#A8A095}
+    .content{margin-left:76px;max-width:none;padding:2.5rem 3rem 4rem}
+    .desktop-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:1.75rem;max-width:1200px;
+      grid-template-areas:"tonight shopping" "tonight plans" "upcoming upcoming" "quick quick"}
+    .ga-tonight{grid-area:tonight}
+    .ga-shopping{grid-area:shopping}
+    .ga-plans{grid-area:plans;margin-bottom:0 !important}
+    .ga-upcoming{grid-area:upcoming}
+    .ga-quick{grid-area:quick}
+    .upcoming-grid{grid-template-columns:repeat(4,1fr) !important}
+    .quick-grid{grid-template-columns:repeat(4,1fr) !important}
+    .desktop-h{font-size:3rem !important}
+  }
+  @media (max-width:1023px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:translateX(0)}
+    .sidebar.open + .sidebar-overlay{display:block}
+  }
+</style>
+</head><body class="min-h-screen">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <h2><span style="font-size:1.5rem">🍳</span> Meal Planner</h2>
+
+  <p class="nav-section">Daily</p>
+  <a href="00-home.html" class="nav-link active"><span class="nav-icon">⌂</span> Home</a>
+  <a href="04-shopping.html" class="nav-link"><span class="nav-icon">⊟</span> Shopping list <span class="badge">7</span></a>
+
+  <p class="nav-section">New plan</p>
+  <a href="01-ingredients.html" class="nav-link"><span class="nav-icon">+</span> Start a plan</a>
+
+  <p class="nav-section">Library</p>
+  <a href="09-plans.html" class="nav-link"><span class="nav-icon">▥</span> Plans</a>
+  <a href="05-favourites.html" class="nav-link"><span class="nav-icon">♥</span> Favourites</a>
+  <a href="06-pantry.html" class="nav-link"><span class="nav-icon">▤</span> My pantry</a>
+  <a href="08-history.html" class="nav-link"><span class="nav-icon">↺</span> History</a>
+
+  <div style="position:absolute;bottom:1.5rem;left:1rem;right:1rem">
+    <a href="index.html" class="nav-link" style="color:#A8A095;font-size:.8rem">← back to mockup index</a>
+  </div>
+</aside>
+<div class="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open')"></div>
+
+<!-- MOBILE BAR -->
+<div class="mobile-bar">
+  <button class="hamburger" onclick="document.getElementById('sidebar').classList.add('open')">
+    <span style="font-size:1.2rem">☰</span>
+  </button>
+  <span class="font-display text-lg">Meal Planner</span>
+  <span style="width:38px"></span>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+  <p class="num">Thursday · 9 April</p>
+  <h1 class="font-display text-4xl mt-1 mb-8 desktop-h">Good evening, Josh</h1>
+
+  <div class="desktop-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="ga-tonight">
+      <p class="num mb-2">Tonight's dinner</p>
+      <div class="card overflow-hidden mb-6">
+        <div class="photo" style="height:200px">photo</div>
+        <div class="p-5">
+          <p class="text-xs text-stone-500 mb-1">From Plan · Apr 5 delivery</p>
+          <h2 class="font-display text-2xl leading-tight mb-2">Pan-Seared Steak with Smashed Potatoes</h2>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <span class="pill">⏱ 30 min</span>
+            <span class="pill">2 adults + 1 child</span>
+          </div>
+          <a href="03-recipe.html" class="btn">Open recipe →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="ga-shopping">
+      <p class="num mb-2">Shopping list</p>
+      <a href="04-shopping.html" class="card block p-4 mb-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-display text-lg">7 items to buy</p>
+            <p class="text-xs text-stone-500">Across 2 active plans · 2 ticked</p>
+          </div>
+          <span class="text-stone-300 text-xl">›</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- UPCOMING MEALS — full width -->
+    <div class="span-full ga-upcoming">
+      <div class="flex items-center justify-between mb-3">
+        <p class="num">Upcoming meals · 6</p>
+        <a href="09-plans.html" class="text-xs text-stone-500">View all →</a>
+      </div>
+      <div class="flex gap-3 overflow-x-auto pb-3 -mx-5 px-5 lg:mx-0 lg:px-0" style="scroll-snap-type:x mandatory">
+
+        <a href="03-recipe.html" class="card overflow-hidden block flex-shrink-0" style="width:200px;scroll-snap-align:start">
+          <div class="photo" style="height:110px">photo</div>
+          <div class="p-3">
+            <p class="text-[10px] text-stone-500 uppercase tracking-wider">Sat 11 · Plan A</p>
+            <h3 class="font-display text-sm leading-tight mt-1">Slow-Braised Chicken with Root Veg</h3>
+            <div class="mt-1.5"><span class="pill" style="font-size:.6rem">⏱ 20 min</span></div>
+          </div>
+        </a>
+
+        <a href="03-recipe.html" class="card overflow-hidden block flex-shrink-0" style="width:200px;scroll-snap-align:start">
+          <div class="photo" style="height:110px">photo</div>
+          <div class="p-3">
+            <p class="text-[10px] text-stone-500 uppercase tracking-wider">Sun 12 · Plan B</p>
+            <h3 class="font-display text-sm leading-tight mt-1">Vietnamese Beef Pho</h3>
+            <div class="mt-1.5"><span class="pill" style="font-size:.6rem">⏱ 35 min</span></div>
+          </div>
+        </a>
+
+        <a href="03-recipe.html" class="card overflow-hidden block flex-shrink-0" style="width:200px;scroll-snap-align:start">
+          <div class="photo" style="height:110px">photo</div>
+          <div class="p-3">
+            <p class="text-[10px] text-stone-500 uppercase tracking-wider">Mon 13 · Plan B</p>
+            <h3 class="font-display text-sm leading-tight mt-1">Korean BBQ Chicken Thighs</h3>
+            <div class="mt-1.5"><span class="pill" style="font-size:.6rem;background:#FBEFD9;color:#A8722A">custom</span></div>
+          </div>
+        </a>
+
+        <a href="03-recipe.html" class="card overflow-hidden block flex-shrink-0" style="width:200px;scroll-snap-align:start">
+          <div class="photo" style="height:110px">photo</div>
+          <div class="p-3">
+            <p class="text-[10px] text-stone-500 uppercase tracking-wider">Wed 15 · Plan B</p>
+            <h3 class="font-display text-sm leading-tight mt-1">Thai Basil Pork Mince</h3>
+            <div class="mt-1.5"><span class="pill" style="font-size:.6rem">⏱ 20 min</span></div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ACTIVE PLANS — full width -->
+    <div class="span-full ga-plans">
+      <div class="flex items-center justify-between mb-3">
+        <p class="num">Active plans · 2</p>
+        <a href="09-plans.html" class="text-xs text-stone-500">View all →</a>
+      </div>
+      <div class="card mb-6">
+        <div class="plan-row">
+          <div class="flex-1">
+            <p class="font-display text-base">Easter week</p>
+            <p class="text-xs text-stone-500 mt-0.5">2 of 5 meals left · Sat 11 Apr last</p>
+            <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+          </div>
+          <span class="text-stone-300">›</span>
+        </div>
+        <div class="plan-row">
+          <div class="flex-1">
+            <p class="font-display text-base">Plan from Apr 9</p>
+            <p class="text-xs text-stone-500 mt-0.5">9 meals planned · starts Sun 12 Apr</p>
+            <div class="progress"><div class="progress-bar" style="width:0%"></div></div>
+          </div>
+          <span class="text-stone-300">›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACCESS — full width on desktop -->
+    <div class="span-full ga-quick">
+      <p class="num mb-3">Quick access</p>
+      <div class="grid grid-cols-2 gap-3 quick-grid">
+        <a href="05-favourites.html" class="nav-tile">
+          <p class="text-xs text-stone-500">Saved</p>
+          <p class="font-display text-lg mt-1">Favourites · 12</p>
+        </a>
+        <a href="06-pantry.html" class="nav-tile">
+          <p class="text-xs text-stone-500">Inventory</p>
+          <p class="font-display text-lg mt-1">My pantry · 34</p>
+        </a>
+        <a href="08-history.html" class="nav-tile">
+          <p class="text-xs text-stone-500">Cooked</p>
+          <p class="font-display text-lg mt-1">History · 87</p>
+        </a>
+        <a href="09-plans.html" class="nav-tile">
+          <p class="text-xs text-stone-500">Archived</p>
+          <p class="font-display text-lg mt-1">All plans · 16</p>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

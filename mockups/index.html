@@ -1,0 +1,47 @@
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meal Planner — Mockups</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif;background:#FAF7F2;color:#1F1B16}
+  .font-display{font-family:'Fraunces',serif;letter-spacing:-.01em}
+  a.card{background:#fff;border:1px solid #ECE6DC;border-radius:18px;padding:1.25rem;display:block;transition:all .2s}
+  a.card:hover{border-color:#4A6B4A;transform:translateY(-2px)}
+  .num{font-family:'Fraunces',serif;color:#4A6B4A;font-size:.85rem}
+  .group-label{font-family:'Fraunces',serif;color:#8B7355;font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;margin:1.5rem 0 .75rem}
+</style>
+</head><body class="min-h-screen">
+<div class="max-w-3xl mx-auto px-6 py-16">
+  <p class="num mb-3">Mockups · v2</p>
+  <h1 class="font-display text-5xl mb-3">Weekly Meal Planner</h1>
+  <p class="text-stone-600 mb-8 max-w-xl">Static visual mockups, mobile-first. Best viewed at phone width or in DevTools device mode.</p>
+
+  <p class="group-label">Daily use</p>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <a class="card" href="00-home.html"><p class="num">00</p><p class="font-display text-xl mt-1">Home</p><p class="text-sm text-stone-600 mt-1">Tonight's dinner, active plans, quick nav</p></a>
+    <a class="card" href="04-shopping.html"><p class="num">05</p><p class="font-display text-xl mt-1">Shopping List</p><p class="text-sm text-stone-600 mt-1">Master list across all active plans</p></a>
+  </div>
+
+  <p class="group-label">New plan flow</p>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <a class="card" href="01-ingredients.html"><p class="num">01</p><p class="font-display text-xl mt-1">Ingredients</p><p class="text-sm text-stone-600 mt-1">Paste butcher &amp; grocer orders, set portions</p></a>
+    <a class="card" href="07-calendar.html"><p class="num">02</p><p class="font-display text-xl mt-1">Calendar &amp; Cuisine</p><p class="text-sm text-stone-600 mt-1">Pick cooking nights, set cuisine per date</p></a>
+    <a class="card" href="02-suggestions.html"><p class="num">03</p><p class="font-display text-xl mt-1">Meal Ideas</p><p class="text-sm text-stone-600 mt-1">AI suggestions, accept / regenerate</p></a>
+    <a class="card" href="03-recipe.html"><p class="num">04</p><p class="font-display text-xl mt-1">Recipe Card</p><p class="text-sm text-stone-600 mt-1">Marley Spoon-style step-by-step</p></a>
+  </div>
+
+  <p class="group-label">Library &amp; settings</p>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <a class="card" href="09-plans.html"><p class="num">06</p><p class="font-display text-xl mt-1">Plans</p><p class="text-sm text-stone-600 mt-1">Active &amp; archived. Manual archive + star rating</p></a>
+    <a class="card" href="05-favourites.html"><p class="num">07</p><p class="font-display text-xl mt-1">Favourites</p><p class="text-sm text-stone-600 mt-1">Saved meals, "cook again" shortcut</p></a>
+    <a class="card" href="06-pantry.html"><p class="num">08</p><p class="font-display text-xl mt-1">My Pantry</p><p class="text-sm text-stone-600 mt-1">Persistent inventory, used by the AI</p></a>
+    <a class="card" href="08-history.html"><p class="num">09</p><p class="font-display text-xl mt-1">History</p><p class="text-sm text-stone-600 mt-1">Every cooked meal, filterable by rating</p></a>
+  </div>
+
+  <div class="mt-12 p-5 bg-white border border-stone-200 rounded-2xl text-sm text-stone-600">
+    <p class="font-medium text-stone-800 mb-1">v2 — overlapping plans model</p>
+    Plans are additive: a new delivery spawns a new plan alongside any in-progress ones. Pantry, shopping list, favourites and history are global and reconcile across plans. Plans are archived manually with a 1–5★ rating used to filter history and tune future suggestions.
+  </div>
+</div>
+</body></html>
