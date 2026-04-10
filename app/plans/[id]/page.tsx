@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlan, listMealsForPlan } from "@/lib/repo";
 import { planDisplayName, type Recipe } from "@/lib/types";
+import { DeletePlan } from "./DeletePlan";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +54,9 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
               <div>
                 <p className={`meal-title${isCooked ? " cooked" : ""}`}>{r?.title ?? "Recipe pending"}</p>
                 <p className={isCooked ? "status-cooked" : "status-planned"}>
-                  {isCooked ? "✓ Cooked" : "Planned"}
-                  {m.cuisine_pref ? ` · ${m.cuisine_pref}` : ""}
+                  {isCooked ? "✓ Cooked" : ""}
+                  {isCooked && (r?.cuisine || m.cuisine_pref) ? " · " : ""}
+                  {r?.cuisine ?? m.cuisine_pref ?? ""}
                 </p>
               </div>
               <span className="text-stone-300">›</span>
@@ -62,6 +64,8 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
           );
         })}
       </div>
+
+      <DeletePlan planId={plan.id} />
 
       <style>{`
         .progress { height: 6px; background: #F1ECE2; border-radius: 9999px; overflow: hidden; }
