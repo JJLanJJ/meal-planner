@@ -8,9 +8,28 @@ import { FoodImage } from "@/components/FoodImage";
 
 type Step = 1 | 2 | 3;
 
-interface NightDraft { date: string; cuisine: string | null; }
+interface NightDraft {
+  date: string;
+  cuisine: string | null;
+  max_minutes: number | null;
+  difficulty: string | null;
+}
 
 const PRESET_CUISINES = ["Italian", "Mexican", "Thai", "Chinese", "Korean", "Indian", "French", "Pub classic", "BBQ"];
+const TIME_OPTIONS = [
+  { label: "Any", value: null },
+  { label: "≤ 20 min", value: 20 },
+  { label: "≤ 30 min", value: 30 },
+  { label: "≤ 45 min", value: 45 },
+  { label: "≤ 60 min", value: 60 },
+  { label: "60+ min", value: 120 },
+];
+const DIFFICULTY_OPTIONS = [
+  { label: "Any", value: null },
+  { label: "Easy", value: "Easy" },
+  { label: "Medium", value: "Medium" },
+  { label: "Hard", value: "Hard" },
+];
 
 export default function NewPlanPage() {
   const router = useRouter();
@@ -122,12 +141,20 @@ export default function NewPlanPage() {
     setNights((prev) =>
       prev.find((n) => n.date === date)
         ? prev.filter((n) => n.date !== date)
-        : [...prev, { date, cuisine: null }].sort((a, b) => a.date.localeCompare(b.date)),
+        : [...prev, { date, cuisine: null, max_minutes: null, difficulty: null }].sort((a, b) => a.date.localeCompare(b.date)),
     );
   }
 
   function setCuisine(date: string, cuisine: string | null) {
     setNights((prev) => prev.map((n) => (n.date === date ? { ...n, cuisine } : n)));
+  }
+
+  function setMaxMinutes(date: string, max_minutes: number | null) {
+    setNights((prev) => prev.map((n) => (n.date === date ? { ...n, max_minutes } : n)));
+  }
+
+  function setDifficulty(date: string, difficulty: string | null) {
+    setNights((prev) => prev.map((n) => (n.date === date ? { ...n, difficulty } : n)));
   }
 
   async function generate() {
@@ -331,28 +358,75 @@ export default function NewPlanPage() {
         <button onClick={() => setStep(1)} className="text-xs text-stone-500 mb-2">← back</button>
         <p className="num">Step 2 of 3</p>
         <h1 className="font-display text-4xl mt-1 mb-2">When are we cooking?</h1>
-        <p className="text-stone-600 text-sm mb-6">Pick the nights. Tap a selected date to set a cuisine.</p>
+        <p className="text-stone-600 text-sm mb-6">Pick the nights, then set preferences for each.</p>
 
         <CalendarGrid selected={nights.map((n) => n.date)} onToggle={toggleNight} onPick={setPickerDate} />
 
         {nights.length > 0 && (
-          <div className="card mb-5 mt-6">
-            <p className="num p-4 pb-2">Selected · {nights.length}</p>
-            <ul className="divide-y divide-stone-100">
-              {nights.map((n) => (
-                <li key={n.date} className="flex items-center justify-between p-3.5">
-                  <div>
-                    <p className="font-display text-sm">
-                      {new Date(n.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
-                    </p>
-                    <p className={`text-xs mt-0.5 ${n.cuisine ? "text-sage" : "text-stone-400"}`} style={{ color: n.cuisine ? "#4A6B4A" : undefined }}>
-                      {n.cuisine ?? "no preference"}
-                    </p>
-                  </div>
-                  <button onClick={() => setPickerDate(n.date)} className="text-xs text-stone-500">edit</button>
-                </li>
-              ))}
-            </ul>
+          <div className="mt-6 space-y-3">
+            <p className="num">Selected · {nights.length}</p>
+            {nights.map((n) => (
+              <div key={n.date} className="card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-display text-sm">
+                    {new Date(n.date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                  </p>
+                  <button onClick={() => toggleNight(n.date)} className="text-xs text-stone-400 hover:text-red-500">✕ remove</button>
+                </div>
+
+                {/* Cuisine */}
+                <label className="text-[10px] uppercase tracking-wider text-stone-500 mb-1.5 block">Cuisine</label>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <button
+                    onClick={() => setCuisine(n.date, null)}
+                    className="pill"
+                    style={{ border: !n.cuisine ? "1.5px solid #4A6B4A" : "1.5px solid transparent" }}
+                  >Any</button>
+                  {PRESET_CUISINES.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCuisine(n.date, c)}
+                      className="pill"
+                      style={{ border: n.cuisine === c ? "1.5px solid #4A6B4A" : "1.5px solid transparent" }}
+                    >{c}</button>
+                  ))}
+                  <button
+                    onClick={() => setPickerDate(n.date)}
+                    className="pill"
+                    style={{
+                      border: n.cuisine && !PRESET_CUISINES.includes(n.cuisine) ? "1.5px solid #4A6B4A" : "1.5px solid transparent",
+                      fontStyle: "italic",
+                    }}
+                  >{n.cuisine && !PRESET_CUISINES.includes(n.cuisine) ? n.cuisine : "Custom…"}</button>
+                </div>
+
+                {/* Time */}
+                <label className="text-[10px] uppercase tracking-wider text-stone-500 mb-1.5 block">Max time</label>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {TIME_OPTIONS.map((t) => (
+                    <button
+                      key={t.label}
+                      onClick={() => setMaxMinutes(n.date, t.value)}
+                      className="pill"
+                      style={{ border: n.max_minutes === t.value ? "1.5px solid #4A6B4A" : "1.5px solid transparent" }}
+                    >{t.label}</button>
+                  ))}
+                </div>
+
+                {/* Difficulty */}
+                <label className="text-[10px] uppercase tracking-wider text-stone-500 mb-1.5 block">Difficulty</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {DIFFICULTY_OPTIONS.map((d) => (
+                    <button
+                      key={d.label}
+                      onClick={() => setDifficulty(n.date, d.value)}
+                      className="pill"
+                      style={{ border: n.difficulty === d.value ? "1.5px solid #4A6B4A" : "1.5px solid transparent" }}
+                    >{d.label}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

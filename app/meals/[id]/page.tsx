@@ -80,6 +80,22 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
             <span><span className="dot d-pantry"></span>Pantry</span>
             <span><span className="dot d-to-buy"></span>To buy</span>
           </div>
+
+          {recipe.equipment && recipe.equipment.length > 0 && (
+            <div className="mt-5">
+              <h2 className="font-display text-xl mb-3">Equipment</h2>
+              <div className="card p-4">
+                <ul className="text-sm space-y-2">
+                  {recipe.equipment.map((item, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <span style={{ color: "#4A6B4A" }}>•</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="ga-method">

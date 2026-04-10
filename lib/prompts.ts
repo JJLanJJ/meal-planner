@@ -1,9 +1,16 @@
 import { DeliveryItem, Recipe } from "./types";
 
+export interface MealPreference {
+  date: string;
+  cuisine: string | null;
+  max_minutes: number | null;
+  difficulty: string | null; // "Easy" | "Medium" | "Hard" | null
+}
+
 export interface SuggestInput {
   delivery: DeliveryItem[];
   pantry: string[];
-  meals: { date: string; cuisine: string | null }[];
+  meals: MealPreference[];
   adults: number;
   kids: number;
   recentTitles: string[]; // last 30 days, exclude these to keep variety
@@ -18,16 +25,28 @@ Rules:
 - Anything else needed must be marked source: "to-buy".
 - Mark delivery items as source: "delivery". Mark pantry items as source: "pantry".
 - Respect the cuisine preference for each night. If the cuisine is null, choose something complementary that doesn't repeat what's already in the week.
+- Respect the max_minutes constraint if set — the TOTAL cook time must not exceed it.
+- Respect the difficulty constraint if set.
 - Avoid repeating any title in RECENT_MEALS.
-- Aim for 25-45 minute meals on weeknights. Slow-cook or 60+ min only if the user explicitly asks.
+- If no time constraint is given, aim for 25-45 minute meals on weeknights. Slow-cook or 60+ min only if the user explicitly asks.
 - Portions: scale for ADULTS adults + KIDS kids (kids = ~half adult portion).
 - Add a child_note on at least one step per recipe if there's something a kid would object to (chilli, strong herbs, raw garlic, etc.) — explain how to adapt.
 - Keep instructions actionable. Number them implicitly via array order; each step gets a "minutes" estimate.
 - difficulty must be Easy, Medium, or Hard.
+- equipment: list every piece of kitchen equipment needed (e.g. "Large frying pan", "Baking tray", "Blender", "Saucepan"). Be specific — say "Large deep frying pan" not just "Pan".
 - Return STRICT JSON matching the provided tool schema. No prose outside the tool call.`;
 
 export function buildUserPrompt(input: SuggestInput): string {
   const { delivery, pantry, meals, adults, kids, recentTitles } = input;
+
+  const nightLines = meals.map((m, i) => {
+    const parts = [`${i + 1}. ${m.date}`];
+    parts.push(m.cuisine ? `cuisine: ${m.cuisine}` : "cuisine: chef's choice");
+    if (m.max_minutes) parts.push(`max ${m.max_minutes} min`);
+    if (m.difficulty) parts.push(`difficulty: ${m.difficulty}`);
+    return parts.join(" — ");
+  });
+
   return `ADULTS: ${adults}
 KIDS: ${kids}
 
@@ -38,12 +57,7 @@ PANTRY (free to use, do NOT list as to-buy):
 ${pantry.map((p) => `- ${p}`).join("\n") || "(none)"}
 
 NIGHTS TO PLAN:
-${meals
-  .map(
-    (m, i) =>
-      `${i + 1}. ${m.date}${m.cuisine ? ` — cuisine: ${m.cuisine}` : " — cuisine: chef's choice"}`,
-  )
-  .join("\n")}
+${nightLines.join("\n")}
 
 RECENT MEALS (do not repeat):
 ${recentTitles.length ? recentTitles.map((t) => `- ${t}`).join("\n") : "(none)"}
@@ -97,6 +111,11 @@ export const SUGGEST_TOOL = {
                 required: ["minutes", "instruction"],
               },
             },
+            equipment: {
+              type: "array",
+              items: { type: "string" },
+              description: "Kitchen equipment needed, e.g. 'Large frying pan', 'Baking tray', 'Colander'",
+            },
           },
           required: [
             "title",
@@ -108,6 +127,7 @@ export const SUGGEST_TOOL = {
             "difficulty",
             "ingredients",
             "steps",
+            "equipment",
           ],
         },
       },

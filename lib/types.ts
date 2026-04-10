@@ -27,6 +27,7 @@ export const RecipeSchema = z.object({
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
   ingredients: z.array(RecipeIngredientSchema),
   steps: z.array(RecipeStepSchema),
+  equipment: z.array(z.string()).default([]),
 });
 export type Recipe = z.infer<typeof RecipeSchema>;
 

@@ -11,6 +11,8 @@ const Body = z.object({
     z.object({
       date: z.string(),
       cuisine: z.string().nullable(),
+      max_minutes: z.number().int().nullable().default(null),
+      difficulty: z.string().nullable().default(null),
     }),
   ),
   adults: z.number().int().min(1),
