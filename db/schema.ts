@@ -50,4 +50,10 @@ CREATE TABLE IF NOT EXISTS favourites (
   title TEXT NOT NULL,
   saved_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS food_images (
+  title TEXT PRIMARY KEY,
+  image_data TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;

@@ -2,18 +2,6 @@
 
 import { useState } from "react";
 
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
-function imageUrl(title: string, attempt: number): string {
-  const prompt = encodeURIComponent(`${title}, food photography, plated dish`);
-  const seed = hashCode(title) + attempt;
-  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=400&nologo=true&seed=${seed}`;
-}
-
 export function FoodImage({
   title,
   height = 160,
@@ -21,11 +9,10 @@ export function FoodImage({
   title: string;
   height?: number;
 }) {
-  const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const maxRetries = 2;
+  const src = `/api/food-image?title=${encodeURIComponent(title)}`;
 
   return (
     <div
@@ -41,7 +28,7 @@ export function FoodImage({
     >
       {!failed && (
         <img
-          src={imageUrl(title, attempt)}
+          src={src}
           alt={title}
           style={{
             width: "100%",
@@ -52,24 +39,18 @@ export function FoodImage({
           }}
           loading="lazy"
           onLoad={() => setLoaded(true)}
-          onError={() => {
-            if (attempt < maxRetries) {
-              setAttempt((a) => a + 1);
-            } else {
-              setFailed(true);
-            }
-          }}
+          onError={() => setFailed(true)}
         />
       )}
       {!loaded && (
         <span
           style={{
             position: "absolute",
-            fontSize: "2.5rem",
-            opacity: 0.4,
+            fontSize: "2rem",
+            opacity: 0.3,
           }}
         >
-          🍽️
+          {failed ? "🍽️" : "⏳"}
         </span>
       )}
     </div>
