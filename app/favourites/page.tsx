@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listFavourites } from "@/lib/repo";
 import type { Recipe } from "@/lib/types";
+import { FoodImage } from "@/components/FoodImage";
 
 export const dynamic = "force-dynamic";
 
@@ -8,18 +9,7 @@ function parseRecipe(json: string): Recipe | null {
   try { return JSON.parse(json) as Recipe; } catch { return null; }
 }
 
-function foodImageUrl(title: string): string {
-  const prompt = encodeURIComponent(
-    `Professional food photography of ${title}, overhead shot, rustic wooden table, natural lighting, appetizing plating, shallow depth of field`
-  );
-  return `https://image.pollinations.ai/prompt/${prompt}?width=600&height=300&nologo=true&seed=${hashCode(title)}`;
-}
 
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
 
 export default async function FavouritesPage() {
   const favs = await listFavourites();
@@ -39,9 +29,7 @@ export default async function FavouritesPage() {
           const r = parseRecipe(f.recipe_json);
           return (
             <div key={f.id} className="card overflow-hidden">
-              <div style={{ height: 140, background: "#E8E0D4", overflow: "hidden" }}>
-                <img src={foodImageUrl(f.title)} alt={f.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
-              </div>
+              <FoodImage title={f.title} height={140} />
               <div className="p-4">
                 <h2 className="font-display text-lg leading-tight mb-2">{f.title}</h2>
                 {r && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { DeliveryItem, Recipe } from "@/lib/types";
+import { FoodImage } from "@/components/FoodImage";
 
 type Step = 1 | 2 | 3;
 
@@ -406,14 +407,7 @@ export default function NewPlanPage() {
               const isSwapping = swappingIdx === i;
               return (
                 <div key={i} className="card overflow-hidden" style={{ opacity: isSwapping ? 0.5 : 1, transition: "opacity 0.3s" }}>
-                  <div style={{ height: 160, background: "#E8E0D4", overflow: "hidden", position: "relative" }}>
-                    <img
-                      src={foodImageUrl(r.title)}
-                      alt={r.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      loading="lazy"
-                    />
-                  </div>
+                  <FoodImage title={r.title} height={160} />
                   <div className="p-4">
                     <p className="text-[10px] text-stone-500 uppercase tracking-wider">
                       {new Date(nights[i].date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} · {r.cuisine}
@@ -462,18 +456,7 @@ export default function NewPlanPage() {
   );
 }
 
-function foodImageUrl(title: string): string {
-  const prompt = encodeURIComponent(
-    `Professional food photography of ${title}, overhead shot, rustic wooden table, natural lighting, appetizing plating, shallow depth of field`
-  );
-  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=400&nologo=true&seed=${hashCode(title)}`;
-}
 
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
 
 function Stepper({ value, onChange, min }: { value: number; onChange: (n: number) => void; min: number }) {
   return (
