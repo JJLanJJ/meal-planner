@@ -22,6 +22,19 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-AU", { weekday: "short", day: "numeric" });
 }
 
+function foodImageUrl(title: string): string {
+  const prompt = encodeURIComponent(
+    `Professional food photography of ${title}, overhead shot, rustic wooden table, natural lighting, appetizing plating, shallow depth of field`
+  );
+  return `https://image.pollinations.ai/prompt/${prompt}?width=600&height=300&nologo=true&seed=${hashCode(title)}`;
+}
+
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
 export default async function HomePage() {
   const [tonight, activePlans, shopping, upcoming, favs, pantry, history, allPlans] =
     await Promise.all([
@@ -67,7 +80,9 @@ export default async function HomePage() {
           <p className="num mb-2">Tonight&apos;s dinner</p>
           {tonight && tonightRecipe ? (
             <div className="card overflow-hidden mb-6">
-              <div className="photo" style={{ height: 200 }}>photo</div>
+              <div style={{ height: 200, background: "#E8E0D4", overflow: "hidden" }}>
+                <img src={foodImageUrl(tonightRecipe.title)} alt={tonightRecipe.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
               <div className="p-5">
                 <p className="text-xs text-stone-500 mb-1">
                   {tonight.plan_name ? tonight.plan_name : "From plan"} · {fmtDate(tonight.scheduled_date)}
@@ -141,7 +156,9 @@ export default async function HomePage() {
               const r = parseRecipe(m.recipe_json);
               return (
                 <Link key={m.id} href={`/meals/${m.id}`} className="card overflow-hidden block flex-shrink-0" style={{ width: 200, scrollSnapAlign: "start" }}>
-                  <div className="photo" style={{ height: 110 }}>photo</div>
+                  <div style={{ height: 110, background: "#E8E0D4", overflow: "hidden" }}>
+                    {r && <img src={foodImageUrl(r.title)} alt={r?.title ?? "Recipe"} style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />}
+                  </div>
                   <div className="p-3">
                     <p className="text-[10px] text-stone-500 uppercase tracking-wider">
                       {fmtDate(m.scheduled_date)} · {m.plan_name ?? "Plan"}

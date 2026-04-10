@@ -15,6 +15,19 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" });
 }
 
+function foodImageUrl(title: string): string {
+  const prompt = encodeURIComponent(
+    `Professional food photography of ${title}, overhead shot, rustic wooden table, natural lighting, appetizing plating, shallow depth of field`
+  );
+  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=500&nologo=true&seed=${hashCode(title)}`;
+}
+
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
 export default async function MealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const meal = await getMeal(Number(id));
@@ -41,7 +54,13 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
 
       <div className="recipe-grid mt-4">
         <div className="ga-photo">
-          <div className="photo" style={{ height: 280, borderRadius: 20 }}>photo</div>
+          <div style={{ height: 280, borderRadius: 20, overflow: "hidden", background: "#E8E0D4" }}>
+            <img
+              src={foodImageUrl(recipe.title)}
+              alt={recipe.title}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </div>
         </div>
 
         <div className="ga-head">

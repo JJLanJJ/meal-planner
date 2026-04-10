@@ -96,7 +96,11 @@ export async function createMeal(args: {
       args.recipe ? JSON.stringify(args.recipe) : null,
     ],
   });
-  return Number(r.lastInsertRowid);
+  const id = Number(r.lastInsertRowid);
+  if (args.recipe) {
+    await syncShoppingForMeal(id, args.recipe);
+  }
+  return id;
 }
 
 export async function setMealRecipe(id: number, recipe: Recipe): Promise<void> {

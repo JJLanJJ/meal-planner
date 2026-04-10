@@ -32,7 +32,9 @@ export default function NewPlanPage() {
 
   // Step 3
   const [generating, setGenerating] = useState(false);
+  const [swappingIdx, setSwappingIdx] = useState<number | null>(null);
   const [recipes, setRecipes] = useState<Recipe[] | null>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Persist draft
@@ -155,8 +157,45 @@ export default function NewPlanPage() {
     }
   }
 
-  async function savePlan() {
+  async function swapRecipe(idx: number) {
     if (!recipes) return;
+    setSwappingIdx(idx);
+    setError(null);
+    try {
+      const pantryRes = await fetch("/api/pantry");
+      const { items: pantry } = await pantryRes.json();
+
+      // Pass existing recipe titles (including the one being swapped) as "recent" so Claude avoids them
+      const recentTitles = recipes.map((r) => r.title);
+
+      const r = await fetch("/api/suggest", {
+        method: "POST",
+        body: JSON.stringify({
+          delivery,
+          pantry: pantry.map((p: any) => p.name),
+          meals: [nights[idx]],
+          adults,
+          kids,
+          recentTitles,
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error ?? "Swap failed");
+
+      const newRecipe = j.recipes?.[0];
+      if (newRecipe) {
+        setRecipes((prev) => prev!.map((old, i) => (i === idx ? newRecipe : old)));
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSwappingIdx(null);
+    }
+  }
+
+  async function savePlan() {
+    if (!recipes || saving) return;
+    setSaving(true);
     const planRes = await fetch("/api/plans", {
       method: "POST",
       body: JSON.stringify({ name: name || null, adults, kids, delivery }),
@@ -362,35 +401,78 @@ export default function NewPlanPage() {
       {recipes && (
         <>
           <div className="grid gap-3 lg:grid-cols-2">
-            {recipes.map((r, i) => (
-              <div key={i} className="card overflow-hidden">
-                <div className="photo" style={{ height: 140 }}>photo</div>
-                <div className="p-4">
-                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">
-                    {new Date(nights[i].date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} · {r.cuisine}
-                  </p>
-                  <h3 className="font-display text-lg leading-tight mt-1">{r.title}</h3>
-                  <p className="text-xs text-stone-600 mt-1 line-clamp-2">{r.description}</p>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    <span className="pill">⏱ {r.total_minutes} min</span>
-                    <span className="pill">{r.difficulty}</span>
-                    {r.ingredients.filter((g) => g.source === "to-buy").length > 0 && (
-                      <span className="pill" style={{ background: "#FBEFD9", color: "#C65A3A" }}>
-                        + {r.ingredients.filter((g) => g.source === "to-buy").length} to buy
-                      </span>
+            {recipes.map((r, i) => {
+              const toBuy = r.ingredients.filter((g) => g.source === "to-buy");
+              const isSwapping = swappingIdx === i;
+              return (
+                <div key={i} className="card overflow-hidden" style={{ opacity: isSwapping ? 0.5 : 1, transition: "opacity 0.3s" }}>
+                  <div style={{ height: 160, background: "#E8E0D4", overflow: "hidden", position: "relative" }}>
+                    <img
+                      src={foodImageUrl(r.title)}
+                      alt={r.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[10px] text-stone-500 uppercase tracking-wider">
+                      {new Date(nights[i].date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} · {r.cuisine}
+                    </p>
+                    <h3 className="font-display text-lg leading-tight mt-1">{r.title}</h3>
+                    <p className="text-xs text-stone-600 mt-1 line-clamp-2">{r.description}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      <span className="pill">⏱ {r.total_minutes} min</span>
+                      <span className="pill">{r.difficulty}</span>
+                    </div>
+
+                    {toBuy.length > 0 && (
+                      <div className="mt-3 pt-3" style={{ borderTop: "1px solid #ECE6DC" }}>
+                        <p className="text-[10px] uppercase tracking-wider text-stone-500 mb-1.5" style={{ color: "#C65A3A" }}>
+                          Need to buy ({toBuy.length})
+                        </p>
+                        <ul className="text-xs text-stone-700">
+                          {toBuy.map((item, j) => (
+                            <li key={j} className="flex justify-between py-0.5">
+                              <span>{item.name}</span>
+                              <span className="text-stone-400">{item.qty}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
+
+                    <button
+                      className="text-xs mt-3 w-full py-2 rounded-lg border border-stone-200 text-stone-500 hover:bg-stone-50"
+                      onClick={() => swapRecipe(i)}
+                      disabled={isSwapping || swappingIdx !== null}
+                    >
+                      {isSwapping ? "Swapping…" : "↻ Swap this meal"}
+                    </button>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <button className="btn-primary w-full mt-6" onClick={savePlan}>
-            Save plan ✓
+          <button className="btn-primary w-full mt-6" onClick={savePlan} disabled={saving}>
+            {saving ? "Saving…" : "Save plan ✓"}
           </button>
         </>
       )}
     </div>
   );
+}
+
+function foodImageUrl(title: string): string {
+  const prompt = encodeURIComponent(
+    `Professional food photography of ${title}, overhead shot, rustic wooden table, natural lighting, appetizing plating, shallow depth of field`
+  );
+  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=400&nologo=true&seed=${hashCode(title)}`;
+}
+
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
 }
 
 function Stepper({ value, onChange, min }: { value: number; onChange: (n: number) => void; min: number }) {
