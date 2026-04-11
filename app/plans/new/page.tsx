@@ -141,8 +141,18 @@ export default function NewPlanPage() {
         alert("Only images or PDFs supported.");
         return;
       }
-      const buf = await file.arrayBuffer();
-      const data = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      // FileReader → data URL is chunk-safe. Spreading a Uint8Array into
+      // String.fromCharCode() blows the stack on any file over ~100KB.
+      const data: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const comma = result.indexOf(",");
+          resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+        reader.readAsDataURL(file);
+      });
       const r = await fetch("/api/parse-file", {
         method: "POST",
         body: JSON.stringify({
@@ -157,6 +167,8 @@ export default function NewPlanPage() {
         return;
       }
       setDelivery((prev) => mergeItems(prev, j.items ?? []));
+    } catch (e: any) {
+      alert(`Upload failed: ${e?.message ?? e}`);
     } finally {
       setUploading(false);
     }
