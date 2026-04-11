@@ -256,7 +256,6 @@ export default function PantryPage() {
             ref={photoInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             style={{ display: "none" }}
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -269,7 +268,7 @@ export default function PantryPage() {
             onClick={() => photoInputRef.current?.click()}
             disabled={photoStatus === "Identifying…"}
           >
-            {photoStatus === "Identifying…" ? "Identifying…" : "📸 Add from photo"}
+            {photoStatus === "Identifying…" ? "Identifying…" : "📸 Add from photo or upload"}
           </button>
           {photoStatus && photoStatus !== "Identifying…" && (
             <p className="text-xs text-stone-500 mt-2 text-center">{photoStatus}</p>
