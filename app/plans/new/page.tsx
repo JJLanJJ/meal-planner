@@ -674,7 +674,7 @@ export default function NewPlanPage() {
 
       {recipes && (
         <>
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {recipes.map((r, i) => {
               const toBuy = r.ingredients.filter((g) => g.source === "to-buy");
               const isSwapping = swappingIdx === i;

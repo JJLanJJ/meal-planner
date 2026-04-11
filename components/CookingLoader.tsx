@@ -8,7 +8,7 @@ const FOODS = [
 export function CookingLoader({ message }: { message: string }) {
   const loop = [...FOODS, ...FOODS];
   return (
-    <div className="card p-6 text-center">
+    <div className="card p-6 text-center min-w-0 overflow-hidden">
       <div className="cooking-marquee-mask overflow-hidden mb-4">
         <div className="cooking-marquee-track text-3xl gap-3">
           {loop.map((e, i) => (
