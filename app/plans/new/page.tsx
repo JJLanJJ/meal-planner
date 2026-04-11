@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { DeliveryItem, Recipe } from "@/lib/types";
 import { FoodImage } from "@/components/FoodImage";
 import { CookingLoader } from "@/components/CookingLoader";
+import { compressImageToBase64 } from "@/lib/image-upload";
 
 type Step = 1 | 2 | 3;
 
@@ -143,27 +144,41 @@ export default function NewPlanPage() {
         alert("Only images or PDFs supported.");
         return;
       }
-      // FileReader → data URL is chunk-safe. Spreading a Uint8Array into
-      // String.fromCharCode() blows the stack on any file over ~100KB.
-      const data: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const comma = result.indexOf(",");
-          resolve(comma >= 0 ? result.slice(comma + 1) : result);
-        };
-        reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
-        reader.readAsDataURL(file);
-      });
+
+      let data: string;
+      let media_type: string;
+      if (isImage) {
+        // Compress images client-side so we don't blow Vercel's request body
+        // limit and so HEIC etc. get normalised to JPEG.
+        const compressed = await compressImageToBase64(file);
+        data = compressed.data;
+        media_type = compressed.mediaType;
+      } else {
+        // PDFs go through as-is via FileReader (chunk-safe for large files).
+        data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            const comma = result.indexOf(",");
+            resolve(comma >= 0 ? result.slice(comma + 1) : result);
+          };
+          reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+          reader.readAsDataURL(file);
+        });
+        media_type = file.type;
+      }
+
       const r = await fetch("/api/parse-file", {
         method: "POST",
         body: JSON.stringify({
-          media_type: file.type,
+          media_type,
           data,
           kind: isPdf ? "pdf" : "image",
         }),
       });
-      const j = await r.json();
+      const text = await r.text();
+      let j: any = {};
+      try { j = JSON.parse(text); } catch { j = { error: text.slice(0, 200) }; }
       if (!r.ok) {
         alert(j.error ?? "Parse failed");
         return;

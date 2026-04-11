@@ -9,6 +9,7 @@ import {
   PANTRY_CATEGORIES,
   type FoodSuggestion,
 } from "@/lib/food-suggestions";
+import { compressImageToBase64 } from "@/lib/image-upload";
 
 type Item = { id: number; name: string; qty: string | null; category: string };
 
@@ -25,7 +26,8 @@ export default function PantryPage() {
   const [pendingAdd, setPendingAdd] = useState<{ name: string; qty: string | null } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoCameraRef = useRef<HTMLInputElement>(null);
+  const photoUploadRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     const r = await fetch("/api/pantry");
@@ -130,23 +132,16 @@ export default function PantryPage() {
     }
     setPhotoStatus("Identifying…");
     try {
-      const data: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const comma = result.indexOf(",");
-          resolve(comma >= 0 ? result.slice(comma + 1) : result);
-        };
-        reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
-        reader.readAsDataURL(file);
-      });
+      const { data, mediaType } = await compressImageToBase64(file);
 
       const r = await fetch("/api/pantry/parse-photo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ media_type: file.type, data }),
+        body: JSON.stringify({ media_type: mediaType, data }),
       });
-      const j = await r.json();
+      const text = await r.text();
+      let j: any = {};
+      try { j = JSON.parse(text); } catch { j = { error: text.slice(0, 200) }; }
       if (!r.ok) {
         alert(j.error ?? "Photo parse failed");
         setPhotoStatus(null);
@@ -253,7 +248,19 @@ export default function PantryPage() {
 
         <div className="mt-3 pt-3" style={{ borderTop: "1px solid #ECE6DC" }}>
           <input
-            ref={photoInputRef}
+            ref={photoCameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadPhoto(f);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={photoUploadRef}
             type="file"
             accept="image/*"
             style={{ display: "none" }}
@@ -263,14 +270,23 @@ export default function PantryPage() {
               e.target.value = "";
             }}
           />
-          <button
-            className="btn-ghost w-full"
-            onClick={() => photoInputRef.current?.click()}
-            disabled={photoStatus === "Identifying…"}
-          >
-            {photoStatus === "Identifying…" ? "Identifying…" : "📸 Add from photo or upload"}
-          </button>
-          {photoStatus && photoStatus !== "Identifying…" && (
+          <div className="flex gap-2">
+            <button
+              className="btn-ghost flex-1"
+              onClick={() => photoCameraRef.current?.click()}
+              disabled={photoStatus === "Identifying…"}
+            >
+              📸 Take photo
+            </button>
+            <button
+              className="btn-ghost flex-1"
+              onClick={() => photoUploadRef.current?.click()}
+              disabled={photoStatus === "Identifying…"}
+            >
+              🖼️ Upload image
+            </button>
+          </div>
+          {photoStatus && (
             <p className="text-xs text-stone-500 mt-2 text-center">{photoStatus}</p>
           )}
         </div>
