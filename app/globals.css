@@ -113,3 +113,17 @@
     border-color: var(--color-sage);
   }
 }
+
+@keyframes cooking-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.cooking-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: cooking-marquee 18s linear infinite;
+}
+.cooking-marquee-mask {
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}

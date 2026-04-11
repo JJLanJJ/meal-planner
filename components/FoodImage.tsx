@@ -68,7 +68,7 @@ export function FoodImage({
       fetch(`/api/food-image/cache`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, cuisine }),
       })
         .then((r) => r.json())
         .then((j) => {
@@ -76,7 +76,7 @@ export function FoodImage({
         })
         .catch(() => {});
     }
-  }, [triedCache, src, title, cacheUrl]);
+  }, [triedCache, src, title, cuisine, cacheUrl]);
 
   return (
     <div

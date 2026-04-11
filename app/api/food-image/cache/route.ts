@@ -5,7 +5,9 @@ export const maxDuration = 15;
 
 // POST: search Pexels for a food photo and cache in DB
 export async function POST(req: Request) {
-  const { title } = await req.json().catch(() => ({ title: "" }));
+  const { title, cuisine } = await req
+    .json()
+    .catch(() => ({ title: "", cuisine: "" }));
   if (!title) {
     return NextResponse.json({ error: "title required" }, { status: 400 });
   }
@@ -27,8 +29,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Search Pexels for a food photo matching the dish title
-    const query = encodeURIComponent(`${title} food dish`);
+    // Search Pexels for a food photo. Cuisine + title gives tighter matches
+    // than title alone (e.g. "Thai green curry" beats "Jungle Curry").
+    const terms = [cuisine, title, "food"].filter(Boolean).join(" ");
+    const query = encodeURIComponent(terms);
     const searchRes = await fetch(
       `https://api.pexels.com/v1/search?query=${query}&per_page=1&orientation=landscape`,
       {

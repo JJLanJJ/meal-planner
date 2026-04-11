@@ -14,6 +14,11 @@ async function init(): Promise<Client> {
   // Split on semicolons followed by newline; libsql executeMultiple is fine for raw SQL.
   await client.executeMultiple(schema);
 
+  // Idempotent migrations for columns added after initial table creation.
+  // CREATE TABLE IF NOT EXISTS won't add new columns to an existing table.
+  await ensureColumn(client, "inventory_items", "available_from", "TEXT");
+  await ensureColumn(client, "pantry_items", "qty", "TEXT");
+
   // Seed pantry on first boot.
   const count = await client.execute("SELECT COUNT(*) as c FROM pantry_items");
   const c = Number(count.rows[0]?.c ?? 0);
@@ -28,6 +33,19 @@ async function init(): Promise<Client> {
   }
 
   return client;
+}
+
+async function ensureColumn(
+  client: Client,
+  table: string,
+  column: string,
+  type: string,
+): Promise<void> {
+  const info = await client.execute(`PRAGMA table_info(${table})`);
+  const exists = info.rows.some((r) => (r as any).name === column);
+  if (!exists) {
+    await client.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
 }
 
 export function getClient(): Promise<Client> {
