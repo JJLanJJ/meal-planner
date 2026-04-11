@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS favourites (
 CREATE TABLE IF NOT EXISTS food_images (
   title TEXT PRIMARY KEY,
   image_data TEXT NOT NULL,
+  mime_type TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

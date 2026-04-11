@@ -18,6 +18,11 @@ async function init(): Promise<Client> {
   // CREATE TABLE IF NOT EXISTS won't add new columns to an existing table.
   await ensureColumn(client, "inventory_items", "available_from", "TEXT");
   await ensureColumn(client, "pantry_items", "qty", "TEXT");
+  await ensureColumn(client, "food_images", "mime_type", "TEXT");
+
+  // Purge pre-Imagen Pexels cache entries so they re-fetch via Imagen.
+  // Self-gating: once all rows have a mime_type, this is a no-op.
+  await client.execute("DELETE FROM food_images WHERE mime_type IS NULL");
 
   // Seed pantry on first boot.
   const count = await client.execute("SELECT COUNT(*) as c FROM pantry_items");

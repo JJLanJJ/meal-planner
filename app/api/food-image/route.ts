@@ -10,21 +10,21 @@ export async function GET(req: Request) {
 
   const db = await getClient();
   const cached = await db.execute({
-    sql: "SELECT image_data FROM food_images WHERE title = ?",
+    sql: "SELECT image_data, mime_type FROM food_images WHERE title = ?",
     args: [title],
   });
 
   if (cached.rows.length > 0) {
     const data = cached.rows[0].image_data as string;
+    const mime = (cached.rows[0].mime_type as string | null) ?? "image/png";
     const buf = Buffer.from(data, "base64");
-    return new Response(buf, {
+    return new Response(buf as BodyInit, {
       headers: {
-        "content-type": "image/jpeg",
+        "content-type": mime,
         "cache-control": "public, max-age=31536000, immutable",
       },
     });
   }
 
-  // Not cached — return 404 so client falls back to Pollinations direct
   return new Response(null, { status: 404 });
 }
