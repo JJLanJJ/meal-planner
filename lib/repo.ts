@@ -338,6 +338,21 @@ export async function listInventory(planId: number): Promise<InventoryItemRow[]>
   return rows<InventoryItemRow>(r.rows as unknown as Row[]);
 }
 
+/** Every inventory row across all active plans, with the owning plan's name. */
+export async function listActiveInventory(): Promise<
+  (InventoryItemRow & { plan_name: string | null })[]
+> {
+  const c = await getClient();
+  const r = await c.execute(
+    `SELECT i.*, p.name as plan_name
+     FROM inventory_items i
+     JOIN plans p ON p.id = i.plan_id
+     WHERE p.status = 'active'
+     ORDER BY i.source DESC, i.category, i.name, p.created_at DESC`,
+  );
+  return rows(r.rows as unknown as Row[]);
+}
+
 export async function populateInventory(
   planId: number,
   deliveryItems: (DeliveryItem & { available_from?: string })[],

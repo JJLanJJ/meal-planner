@@ -491,7 +491,7 @@ export default function NewPlanPage() {
         <h1 className="font-display text-4xl mt-1 mb-2">When are we cooking?</h1>
         <p className="text-stone-600 text-sm mb-6">Pick the nights, then set preferences for each.</p>
 
-        <CalendarGrid selected={nights.map((n) => n.date)} onToggle={toggleNight} onPick={setPickerDate} />
+        <CalendarGrid selected={nights.map((n) => n.date)} onToggle={toggleNight} />
 
         {nights.length > 0 && (
           <div className="mt-6 space-y-3">
@@ -784,11 +784,9 @@ function Stepper({ value, onChange, min }: { value: number; onChange: (n: number
 function CalendarGrid({
   selected,
   onToggle,
-  onPick,
 }: {
   selected: string[];
   onToggle: (date: string) => void;
-  onPick: (date: string) => void;
 }) {
   const today = new Date();
   const year = today.getFullYear();
@@ -821,7 +819,7 @@ function CalendarGrid({
           return (
             <button
               key={i}
-              onClick={() => isSelected ? onPick(date) : onToggle(date)}
+              onClick={() => onToggle(date)}
               className="aspect-square rounded-lg text-sm flex items-center justify-center"
               style={{
                 background: isSelected ? "#4A6B4A" : "transparent",
