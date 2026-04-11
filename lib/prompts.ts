@@ -1,4 +1,4 @@
-import { DeliveryItem, Recipe } from "./types";
+import { DeliveryItem, InventoryItemRow, Recipe } from "./types";
 
 export interface MealPreference {
   date: string;
@@ -10,6 +10,7 @@ export interface MealPreference {
 export interface SuggestInput {
   delivery: DeliveryItem[];
   pantry: string[];
+  inventory?: InventoryItemRow[]; // if present, used instead of delivery+pantry
   meals: MealPreference[];
   adults: number;
   kids: number;
@@ -37,7 +38,7 @@ Rules:
 - Return STRICT JSON matching the provided tool schema. No prose outside the tool call.`;
 
 export function buildUserPrompt(input: SuggestInput): string {
-  const { delivery, pantry, meals, adults, kids, recentTitles } = input;
+  const { delivery, pantry, inventory, meals, adults, kids, recentTitles } = input;
 
   const nightLines = meals.map((m, i) => {
     const parts = [`${i + 1}. ${m.date}`];
@@ -47,14 +48,34 @@ export function buildUserPrompt(input: SuggestInput): string {
     return parts.join(" — ");
   });
 
+  // Use inventory if available (shows remaining quantities after deductions)
+  let deliverySection: string;
+  let pantrySection: string;
+
+  if (inventory && inventory.length > 0) {
+    const invDelivery = inventory.filter((i) => i.source === "delivery");
+    const invPantry = inventory.filter((i) => i.source === "pantry");
+    deliverySection = invDelivery
+      .map((d) => `- ${d.name}${d.qty ? " (" + d.qty + " remaining)" : ""}`)
+      .join("\n") || "(none)";
+    pantrySection = invPantry
+      .map((p) => `- ${p.name}${p.qty ? " (" + p.qty + ")" : ""}`)
+      .join("\n") || "(none)";
+  } else {
+    deliverySection = delivery
+      .map((d) => `- ${d.name}${d.qty ? " (" + d.qty + ")" : ""}`)
+      .join("\n") || "(none)";
+    pantrySection = pantry.map((p) => `- ${p}`).join("\n") || "(none)";
+  }
+
   return `ADULTS: ${adults}
 KIDS: ${kids}
 
-DELIVERY (use these first):
-${delivery.map((d) => `- ${d.name}${d.qty ? " (" + d.qty + ")" : ""}`).join("\n") || "(none)"}
+DELIVERY (use these first — quantities shown are what REMAINS, plan accordingly):
+${deliverySection}
 
 PANTRY (free to use, do NOT list as to-buy):
-${pantry.map((p) => `- ${p}`).join("\n") || "(none)"}
+${pantrySection}
 
 NIGHTS TO PLAN:
 ${nightLines.join("\n")}

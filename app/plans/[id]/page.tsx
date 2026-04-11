@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPlan, listMealsForPlan } from "@/lib/repo";
+import { getPlan, listMealsForPlan, listInventory } from "@/lib/repo";
 import { planDisplayName, type Recipe } from "@/lib/types";
 import { DeletePlan } from "./DeletePlan";
+import { Inventory } from "./Inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
   const plan = await getPlan(Number(id));
   if (!plan) notFound();
   const meals = await listMealsForPlan(plan.id);
+  const inventory = await listInventory(plan.id);
   const total = meals.length;
   const cooked = meals.filter((m) => m.status === "cooked").length;
   const left = total - cooked;
@@ -64,6 +66,8 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
           );
         })}
       </div>
+
+      {inventory.length > 0 && <Inventory planId={plan.id} items={inventory} />}
 
       <DeletePlan planId={plan.id} />
 

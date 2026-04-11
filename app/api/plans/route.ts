@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createPlan, listPlans } from "@/lib/repo";
+import { createPlan, listPlans, listPantry, populateInventory } from "@/lib/repo";
 import { DeliveryItemSchema } from "@/lib/types";
 
 const Body = z.object({
@@ -24,5 +24,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
   const id = await createPlan(parsed.data);
+
+  // Populate inventory from delivery items + pantry
+  const pantryItems = await listPantry();
+  await populateInventory(id, parsed.data.delivery, pantryItems);
+
   return NextResponse.json({ id });
 }

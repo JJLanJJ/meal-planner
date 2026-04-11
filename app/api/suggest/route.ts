@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { getClient } from "@/lib/claude";
 import { SYSTEM_PROMPT, SUGGEST_TOOL, buildUserPrompt } from "@/lib/prompts";
 import { SuggestionsResponseSchema, DeliveryItemSchema } from "@/lib/types";
+import { listInventory } from "@/lib/repo";
 import { z } from "zod";
 
 const Body = z.object({
   delivery: z.array(DeliveryItemSchema),
   pantry: z.array(z.string()),
+  planId: z.number().int().optional(), // if set, uses inventory (remaining quantities)
   meals: z.array(
     z.object({
       date: z.string(),
@@ -35,6 +37,9 @@ export async function POST(req: Request) {
     );
   }
 
+  // If planId is set, fetch current inventory (remaining quantities)
+  const inventory = body.planId ? await listInventory(body.planId) : undefined;
+
   const client = getClient();
   const message = await client.messages.create({
     model: "claude-opus-4-6",
@@ -42,7 +47,7 @@ export async function POST(req: Request) {
     system: SYSTEM_PROMPT,
     tools: [SUGGEST_TOOL as any],
     tool_choice: { type: "tool", name: "suggest_recipes" } as any,
-    messages: [{ role: "user", content: buildUserPrompt(body) }],
+    messages: [{ role: "user", content: buildUserPrompt({ ...body, inventory }) }],
   });
 
   const toolUse = message.content.find((b: any) => b.type === "tool_use") as any;

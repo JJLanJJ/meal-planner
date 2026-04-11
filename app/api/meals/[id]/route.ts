@@ -5,6 +5,7 @@ import {
   markMealCooked,
   setMealRecipe,
   unmarkMealCooked,
+  deductInventory,
 } from "@/lib/repo";
 import { RecipeSchema } from "@/lib/types";
 
@@ -27,7 +28,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
   const mealId = Number(id);
-  if (parsed.data.recipe) await setMealRecipe(mealId, parsed.data.recipe);
+  if (parsed.data.recipe) {
+    await setMealRecipe(mealId, parsed.data.recipe);
+    // Deduct new recipe's ingredients from plan inventory
+    const meal = await getMeal(mealId);
+    if (meal) await deductInventory(meal.plan_id, parsed.data.recipe);
+  }
   if (parsed.data.status === "cooked") await markMealCooked(mealId);
   if (parsed.data.status === "planned") await unmarkMealCooked(mealId);
   return NextResponse.json({ ok: true });

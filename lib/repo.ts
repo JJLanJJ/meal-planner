@@ -2,11 +2,14 @@ import { getClient } from "../db";
 import {
   DeliveryItem,
   FavouriteRow,
+  InventoryItemRow,
   MealRow,
   PantryItemRow,
   PlanRow,
   Recipe,
   ShoppingItemRow,
+  parseQty,
+  formatQty,
 } from "./types";
 
 type Row = Record<string, any>;
@@ -307,6 +310,92 @@ export async function listHistory(opts?: {
   });
   return rows(r.rows as unknown as Row[]);
 }
+
+// ────────── Inventory ──────────
+
+export async function listInventory(planId: number): Promise<InventoryItemRow[]> {
+  const c = await getClient();
+  const r = await c.execute({
+    sql: "SELECT * FROM inventory_items WHERE plan_id = ? ORDER BY source DESC, category, name",
+    args: [planId],
+  });
+  return rows<InventoryItemRow>(r.rows as unknown as Row[]);
+}
+
+export async function populateInventory(
+  planId: number,
+  deliveryItems: DeliveryItem[],
+  pantryItems: PantryItemRow[],
+): Promise<void> {
+  const c = await getClient();
+  const stmts: { sql: string; args: any[] }[] = [];
+  for (const d of deliveryItems) {
+    stmts.push({
+      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category) VALUES (?, ?, ?, 'delivery', ?)",
+      args: [planId, d.name, d.qty ?? null, d.category ?? "other"],
+    });
+  }
+  for (const p of pantryItems) {
+    stmts.push({
+      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category) VALUES (?, ?, NULL, 'pantry', ?)",
+      args: [planId, p.name, p.category ?? "Other"],
+    });
+  }
+  if (stmts.length > 0) await c.batch(stmts, "write");
+}
+
+export async function deductInventory(planId: number, recipe: Recipe): Promise<void> {
+  const inventory = await listInventory(planId);
+  const c = await getClient();
+  const stmts: { sql: string; args: any[] }[] = [];
+
+  for (const ing of recipe.ingredients) {
+    if (ing.source !== "delivery") continue;
+
+    // Find matching inventory item (case-insensitive)
+    const match = inventory.find(
+      (inv) => inv.name.toLowerCase() === ing.name.toLowerCase() && inv.source === "delivery",
+    );
+    if (!match || !match.qty) continue; // no match or unlimited — nothing to deduct
+
+    const invQty = parseQty(match.qty);
+    const usedQty = parseQty(ing.qty);
+    if (!invQty || !usedQty) continue; // can't parse — leave as-is
+    if (invQty.unit !== usedQty.unit) continue; // unit mismatch — leave as-is
+
+    const remaining = invQty.value - usedQty.value;
+    if (remaining <= 0) {
+      // Fully consumed — delete
+      stmts.push({ sql: "DELETE FROM inventory_items WHERE id = ?", args: [match.id] });
+    } else {
+      stmts.push({
+        sql: "UPDATE inventory_items SET qty = ? WHERE id = ?",
+        args: [formatQty(remaining, invQty.unit), match.id],
+      });
+    }
+  }
+
+  if (stmts.length > 0) await c.batch(stmts, "write");
+}
+
+export async function deleteInventoryItem(id: number): Promise<void> {
+  const c = await getClient();
+  await c.execute({ sql: "DELETE FROM inventory_items WHERE id = ?", args: [id] });
+}
+
+export async function updateInventoryItem(
+  id: number,
+  patch: { name?: string; qty?: string | null },
+): Promise<void> {
+  const fields = Object.keys(patch).filter((k) => (patch as any)[k] !== undefined);
+  if (fields.length === 0) return;
+  const c = await getClient();
+  const set = fields.map((f) => `${f} = ?`).join(", ");
+  const values = fields.map((f) => (patch as any)[f]);
+  await c.execute({ sql: `UPDATE inventory_items SET ${set} WHERE id = ?`, args: [...values, id] });
+}
+
+// ────────── History ──────────
 
 export async function recentTitles(days = 30): Promise<string[]> {
   const c = await getClient();

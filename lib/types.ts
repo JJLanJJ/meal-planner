@@ -90,6 +90,29 @@ export interface FavouriteRow {
   saved_at: string;
 }
 
+export interface InventoryItemRow {
+  id: number;
+  plan_id: number;
+  name: string;
+  qty: string | null;
+  source: "delivery" | "pantry";
+  category: string;
+}
+
+/** Parse a qty string like "750g" or "500ml" into { value, unit } or null if unparseable. */
+export function parseQty(raw: string | null | undefined): { value: number; unit: string } | null {
+  if (!raw) return null;
+  const m = raw.trim().match(/^([\d.]+)\s*(g|kg|ml|l|pcs?|bunch(?:es)?|head|cloves?|stalks?|ears?|strips?|fillets?)$/i);
+  if (!m) return null;
+  return { value: parseFloat(m[1]), unit: m[2].toLowerCase() };
+}
+
+/** Format a parsed qty back to string, e.g. { value: 350, unit: "g" } → "350g" */
+export function formatQty(value: number, unit: string): string {
+  const v = Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+  return `${v}${unit}`;
+}
+
 export function planDisplayName(p: PlanRow): string {
   if (p.name && p.name.trim()) return p.name;
   const d = new Date(p.created_at);

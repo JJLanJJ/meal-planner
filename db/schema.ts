@@ -56,4 +56,14 @@ CREATE TABLE IF NOT EXISTS food_images (
   image_data TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  plan_id INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  qty TEXT,
+  source TEXT NOT NULL DEFAULT 'delivery',
+  category TEXT NOT NULL DEFAULT 'other'
+);
+CREATE INDEX IF NOT EXISTS idx_inventory_plan ON inventory_items(plan_id);
 `;
