@@ -71,6 +71,7 @@ export interface MealRow {
 export interface PantryItemRow {
   id: number;
   name: string;
+  qty: string | null;
   category: string;
 }
 

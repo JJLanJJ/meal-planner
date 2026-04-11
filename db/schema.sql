@@ -29,6 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_meals_date ON meals(scheduled_date);
 CREATE TABLE IF NOT EXISTS pantry_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
+  qty TEXT,              -- e.g. "500g", "1 bottle"; NULL = always available
   category TEXT NOT NULL DEFAULT 'Other',
   UNIQUE(name)
 );

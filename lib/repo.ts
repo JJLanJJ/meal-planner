@@ -172,12 +172,28 @@ export async function listPantry(): Promise<PantryItemRow[]> {
   return rows<PantryItemRow>(r.rows as unknown as Row[]);
 }
 
-export async function addPantryItem(name: string, category: string): Promise<void> {
+export async function addPantryItem(
+  name: string,
+  category: string,
+  qty?: string | null,
+): Promise<void> {
   const c = await getClient();
   await c.execute({
-    sql: "INSERT OR IGNORE INTO pantry_items (name, category) VALUES (?, ?)",
-    args: [name, category],
+    sql: "INSERT OR IGNORE INTO pantry_items (name, qty, category) VALUES (?, ?, ?)",
+    args: [name, qty ?? null, category],
   });
+}
+
+export async function updatePantryItem(
+  id: number,
+  patch: { name?: string; qty?: string | null; category?: string },
+): Promise<void> {
+  const fields = Object.keys(patch).filter((k) => (patch as any)[k] !== undefined);
+  if (fields.length === 0) return;
+  const c = await getClient();
+  const set = fields.map((f) => `${f} = ?`).join(", ");
+  const values = fields.map((f) => (patch as any)[f]);
+  await c.execute({ sql: `UPDATE pantry_items SET ${set} WHERE id = ?`, args: [...values, id] });
 }
 
 export async function deletePantryItem(id: number): Promise<void> {
