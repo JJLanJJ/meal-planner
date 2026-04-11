@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { searchFoods, categoriseFood, type FoodSuggestion } from "@/lib/food-suggestions";
+import {
+  searchFoods,
+  categoriseFood,
+  findFoodCategory,
+  PANTRY_CATEGORIES,
+  type FoodSuggestion,
+} from "@/lib/food-suggestions";
 
 type Item = { id: number; name: string; qty: string | null; category: string };
 
@@ -15,8 +21,11 @@ export default function PantryPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [editQtyVal, setEditQtyVal] = useState("");
+  const [photoStatus, setPhotoStatus] = useState<string | null>(null);
+  const [pendingAdd, setPendingAdd] = useState<{ name: string; qty: string | null } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     const r = await fetch("/api/pantry");
@@ -85,22 +94,93 @@ export default function PantryPage() {
   async function add() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const category = categoriseFood(trimmed);
+    const category = findFoodCategory(trimmed);
+    if (category == null) {
+      // Unknown — ask the user to pick a category before adding.
+      setPendingAdd({ name: trimmed, qty: qty.trim() || null });
+      setShowSuggestions(false);
+      return;
+    }
+    await commitAdd(trimmed, qty.trim() || null, category);
+  }
+
+  async function commitAdd(itemName: string, itemQty: string | null, category: string) {
     await fetch("/api/pantry", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: trimmed, category, qty: qty.trim() || null }),
+      body: JSON.stringify({ name: itemName, category, qty: itemQty }),
     });
     setName("");
     setQty("");
     setSuggestions([]);
     setShowSuggestions(false);
+    setPendingAdd(null);
     load();
   }
 
   async function remove(id: number) {
     await fetch(`/api/pantry?id=${id}`, { method: "DELETE" });
     load();
+  }
+
+  async function uploadPhoto(file: File) {
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image.");
+      return;
+    }
+    setPhotoStatus("Identifying…");
+    try {
+      const data: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const comma = result.indexOf(",");
+          resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+        reader.readAsDataURL(file);
+      });
+
+      const r = await fetch("/api/pantry/parse-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ media_type: file.type, data }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        alert(j.error ?? "Photo parse failed");
+        setPhotoStatus(null);
+        return;
+      }
+      const items: { name: string; qty?: string; category?: string }[] = j.items ?? [];
+      if (items.length === 0) {
+        setPhotoStatus("No items found.");
+        setTimeout(() => setPhotoStatus(null), 2500);
+        return;
+      }
+
+      // Add each detected item to the pantry.
+      await Promise.all(
+        items.map((it) =>
+          fetch("/api/pantry", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: it.name,
+              category: it.category ?? categoriseFood(it.name),
+              qty: it.qty ?? null,
+            }),
+          }),
+        ),
+      );
+
+      setPhotoStatus(`Added ${items.length} item${items.length === 1 ? "" : "s"}.`);
+      setTimeout(() => setPhotoStatus(null), 2500);
+      load();
+    } catch (e: any) {
+      alert(`Photo upload failed: ${e?.message ?? e}`);
+      setPhotoStatus(null);
+    }
   }
 
   async function saveQty(id: number) {
@@ -170,6 +250,31 @@ export default function PantryPage() {
           />
           <button onClick={add} className="btn-primary">Add</button>
         </div>
+
+        <div className="mt-3 pt-3" style={{ borderTop: "1px solid #ECE6DC" }}>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadPhoto(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            className="btn-ghost w-full"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={photoStatus === "Identifying…"}
+          >
+            {photoStatus === "Identifying…" ? "Identifying…" : "📸 Add from photo"}
+          </button>
+          {photoStatus && photoStatus !== "Identifying…" && (
+            <p className="text-xs text-stone-500 mt-2 text-center">{photoStatus}</p>
+          )}
+        </div>
       </div>
 
       {/* Item groups */}
@@ -211,6 +316,45 @@ export default function PantryPage() {
           </div>
         </div>
       ))}
+
+      {pendingAdd && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
+          onClick={() => setPendingAdd(null)}
+        >
+          <div
+            className="bg-cream w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5"
+            style={{ background: "#FAF7F2" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="num text-center">New item</p>
+            <h2 className="font-display text-2xl text-center mt-1 mb-1">
+              Which category for &ldquo;{pendingAdd.name}&rdquo;?
+            </h2>
+            <p className="text-xs text-stone-500 text-center mb-4">
+              I didn&rsquo;t recognise this one — pick where it belongs.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-2 justify-center">
+              {PANTRY_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  className="pill"
+                  style={{ border: "1.5px solid transparent", padding: "0.5rem 0.9rem" }}
+                  onClick={() => commitAdd(pendingAdd.name, pendingAdd.qty, cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <button
+              className="btn-ghost w-full mt-3"
+              onClick={() => setPendingAdd(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .row { display: flex; align-items: center; gap: .6rem; padding: .7rem 1rem; border-bottom: 1px solid #ECE6DC; }

@@ -305,10 +305,34 @@ export function searchFoods(query: string, limit = 8): FoodSuggestion[] {
 
 /** Get the best category for a food name, or "Other" if unknown. */
 export function categoriseFood(name: string): string {
+  return findFoodCategory(name) ?? "Other";
+}
+
+/** Same as categoriseFood but returns null when no match is found — lets callers
+ *  prompt the user instead of silently defaulting to "Other". */
+export function findFoodCategory(name: string): string | null {
   const lower = name.toLowerCase().trim();
+  if (!lower) return null;
   const match = FOODS.find((f) => f.name.toLowerCase() === lower);
   if (match) return match.category;
-  // Partial match — find the closest
-  const partial = FOODS.find((f) => lower.includes(f.name.toLowerCase()) || f.name.toLowerCase().includes(lower));
-  return partial?.category ?? "Other";
+  const partial = FOODS.find(
+    (f) => lower.includes(f.name.toLowerCase()) || f.name.toLowerCase().includes(lower),
+  );
+  return partial?.category ?? null;
 }
+
+export const PANTRY_CATEGORIES = [
+  "Produce",
+  "Meat & Protein",
+  "Dairy & Fridge",
+  "Dry Goods & Grains",
+  "Canned & Jarred",
+  "Sauces & Condiments",
+  "Spices & Seasonings",
+  "Oils & Vinegars",
+  "Baking",
+  "Nuts & Seeds",
+  "Stock & Broth",
+  "Frozen",
+  "Other",
+] as const;
