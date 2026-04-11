@@ -56,6 +56,7 @@ export default function NewPlanPage() {
   const [dietary, setDietary] = useState("");
   const [excludedDelivery, setExcludedDelivery] = useState<string[]>([]);
   const [excludedCustom, setExcludedCustom] = useState("");
+  const [slowCooker, setSlowCooker] = useState<boolean | null>(null);
 
   // Step 3
   const [generating, setGenerating] = useState(false);
@@ -84,6 +85,7 @@ export default function NewPlanPage() {
         if (d.dietary) setDietary(d.dietary);
         if (d.excludedDelivery) setExcludedDelivery(d.excludedDelivery);
         if (d.excludedCustom) setExcludedCustom(d.excludedCustom);
+        if (typeof d.slowCooker === "boolean") setSlowCooker(d.slowCooker);
       } catch {}
     }
   }, []);
@@ -91,9 +93,9 @@ export default function NewPlanPage() {
   useEffect(() => {
     localStorage.setItem(
       "plan-draft",
-      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights, dietary, excludedDelivery, excludedCustom }),
+      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights, dietary, excludedDelivery, excludedCustom, slowCooker }),
     );
-  }, [name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights, dietary, excludedDelivery, excludedCustom]);
+  }, [name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights, dietary, excludedDelivery, excludedCustom, slowCooker]);
 
   function mergeItems(existing: DeliveryItem[], incoming: DeliveryItem[]): DeliveryItem[] {
     const seen = new Set(existing.map((d) => d.name.toLowerCase()));
@@ -226,6 +228,7 @@ export default function NewPlanPage() {
           recentTitles: [],
           dietary: dietary || undefined,
           excluded: getAllExcluded(),
+          slowCooker: slowCooker === true,
         }),
       });
       const j = await r.json();
@@ -273,6 +276,7 @@ export default function NewPlanPage() {
           recentTitles,
           dietary: dietary || undefined,
           excluded: getAllExcluded(),
+          slowCooker: slowCooker === true,
         }),
       });
       const j = await r.json();
@@ -552,6 +556,37 @@ export default function NewPlanPage() {
 
         <div className="card p-5 mt-6">
           <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">
+            Slow cooker
+          </label>
+          <p className="text-xs text-stone-500 mb-3">Want me to plan at least one slow-cooker meal this week?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSlowCooker(true)}
+              className="pill flex-1"
+              style={{
+                border: slowCooker === true ? "1.5px solid #4A6B4A" : "1.5px solid transparent",
+                padding: "0.6rem 1rem",
+                justifyContent: "center",
+              }}
+            >
+              Yes please
+            </button>
+            <button
+              onClick={() => setSlowCooker(false)}
+              className="pill flex-1"
+              style={{
+                border: slowCooker === false ? "1.5px solid #4A6B4A" : "1.5px solid transparent",
+                padding: "0.6rem 1rem",
+                justifyContent: "center",
+              }}
+            >
+              No thanks
+            </button>
+          </div>
+        </div>
+
+        <div className="card p-5 mt-4">
+          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">
             Dietary requirements <span className="text-stone-400 text-[10px]">(optional)</span>
           </label>
           <input
@@ -606,10 +641,12 @@ export default function NewPlanPage() {
 
         <button
           className="btn-primary w-full mt-4"
-          disabled={nights.length === 0}
+          disabled={nights.length === 0 || slowCooker === null}
           onClick={() => setStep(3)}
         >
-          Generate {nights.length} meal{nights.length === 1 ? "" : "s"} →
+          {slowCooker === null
+            ? "Answer the slow cooker question ↑"
+            : `Generate ${nights.length} meal${nights.length === 1 ? "" : "s"} →`}
         </button>
       </div>
     );

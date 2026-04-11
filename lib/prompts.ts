@@ -17,6 +17,7 @@ export interface SuggestInput {
   recentTitles: string[]; // last 30 days, exclude these to keep variety
   dietary?: string; // free-text dietary requirements (e.g. "vegetarian, low sodium")
   excluded?: string[]; // ingredients the user dislikes / wants avoided
+  slowCooker?: boolean; // if true, suggest at least one slow-cooker meal
 }
 
 export const SYSTEM_PROMPT = `You are a personal home chef writing recipe cards for a single household. Your job is to plan dinners that use the ingredients the family already has.
@@ -40,12 +41,13 @@ Rules:
 - equipment: list every piece of kitchen equipment needed (e.g. "Large frying pan", "Baking tray", "Blender", "Saucepan"). Be specific — say "Large deep frying pan" not just "Pan".
 - If DIETARY requirements are given, every recipe MUST satisfy them (treat as a hard constraint, not a preference).
 - If AVOID ingredients are listed, do NOT use them in any recipe — not as delivery, pantry, or to-buy. Substitute freely. Ignore pantry staples that the user has flagged even if they are in the pantry list.
+- If SLOW_COOKER is "yes", plan at least one recipe built around a slow cooker (typical cook time 4-8 hours on low, or 2-4 hours on high) — braises, stews, pulled meats, soups. Mention "Slow cooker" in the equipment list for that recipe. Don't force it onto nights with a max_minutes constraint that conflicts.
 - Every recipe MUST include nutrition estimates per adult serving: calories, protein_g, carbs_g, fat_g. Be realistic — calories for a typical dinner plate are 500-800. Estimates, not measured values.
 - Every recipe MUST include health_notes: one short sentence (≤20 words) on nutritional character (e.g. "High protein, rich in omega-3 from the salmon" or "Carb-forward comfort food — pair with a side salad").
 - Return STRICT JSON matching the provided tool schema. No prose outside the tool call.`;
 
 export function buildUserPrompt(input: SuggestInput): string {
-  const { delivery, pantry, inventory, meals, adults, kids, recentTitles, dietary, excluded } = input;
+  const { delivery, pantry, inventory, meals, adults, kids, recentTitles, dietary, excluded, slowCooker } = input;
 
   const nightLines = meals.map((m, i) => {
     const parts = [`${i + 1}. ${m.date}`];
@@ -89,6 +91,7 @@ export function buildUserPrompt(input: SuggestInput): string {
 
   return `ADULTS: ${adults}
 KIDS: ${kids}
+SLOW_COOKER: ${slowCooker ? "yes — plan at least one slow cooker meal" : "no"}
 
 DIETARY REQUIREMENTS (hard constraint — every recipe must comply):
 ${dietaryLine}

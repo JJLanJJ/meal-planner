@@ -22,6 +22,7 @@ const Body = z.object({
   recentTitles: z.array(z.string()).default([]),
   dietary: z.string().optional(),
   excluded: z.array(z.string()).default([]),
+  slowCooker: z.boolean().default(false),
 });
 
 export async function POST(req: Request) {
