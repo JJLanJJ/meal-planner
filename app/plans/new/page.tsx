@@ -452,8 +452,8 @@ export default function NewPlanPage() {
             <p className="num mb-2">Parsed · {delivery.length} items</p>
             <ul className="text-sm divide-y divide-stone-100">
               {delivery.map((d, i) => (
-                <li key={i} className="py-2 flex justify-between items-center">
-                  <span>{d.name}</span>
+                <li key={i} className="py-2 flex justify-between items-center gap-2">
+                  <span className="flex-1 min-w-0">{d.name}</span>
                   <span className="text-stone-500 text-right text-xs">
                     {d.qty}
                     {d.available_from && d.available_from !== new Date().toISOString().slice(0, 10) && (
@@ -462,6 +462,14 @@ export default function NewPlanPage() {
                       </span>
                     )}
                   </span>
+                  <button
+                    onClick={() => setDelivery((prev) => prev.filter((_, j) => j !== i))}
+                    className="text-stone-300 hover:text-red-500 text-lg leading-none px-1"
+                    aria-label={`Remove ${d.name}`}
+                    title="Remove"
+                  >
+                    ×
+                  </button>
                 </li>
               ))}
             </ul>
