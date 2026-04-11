@@ -98,6 +98,7 @@ export interface InventoryItemRow {
   qty: string | null;
   source: "delivery" | "pantry";
   category: string;
+  available_from: string | null; // ISO YYYY-MM-DD; null = immediately
 }
 
 /** Parse a qty string like "750g" or "500ml" into { value, unit } or null if unparseable. */

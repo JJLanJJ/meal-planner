@@ -100,4 +100,16 @@
   .input-field:focus {
     border-color: var(--color-sage);
   }
+  .arrival-date {
+    background: #fff;
+    border: 1px solid var(--color-tan-border);
+    border-radius: 8px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    outline: none;
+    color: var(--color-muted);
+  }
+  .arrival-date:focus {
+    border-color: var(--color-sage);
+  }
 }

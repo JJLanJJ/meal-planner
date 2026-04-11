@@ -25,6 +25,7 @@ Rules:
 - Treat PANTRY items as freely available — don't list them as "to-buy".
 - Anything else needed must be marked source: "to-buy".
 - Mark delivery items as source: "delivery". Mark pantry items as source: "pantry".
+- IMPORTANT: Some items have an "available from" date. Only use items that are available on the night you are planning for. If an item arrives Thursday, do NOT use it for a Wednesday recipe.
 - Respect the cuisine preference for each night. If the cuisine is null, choose something complementary that doesn't repeat what's already in the week.
 - Respect the max_minutes constraint if set — the TOTAL cook time must not exceed it.
 - Respect the difficulty constraint if set.
@@ -56,7 +57,14 @@ export function buildUserPrompt(input: SuggestInput): string {
     const invDelivery = inventory.filter((i) => i.source === "delivery");
     const invPantry = inventory.filter((i) => i.source === "pantry");
     deliverySection = invDelivery
-      .map((d) => `- ${d.name}${d.qty ? " (" + d.qty + " remaining)" : ""}`)
+      .map((d) => {
+        const parts = [`- ${d.name}`];
+        const meta: string[] = [];
+        if (d.qty) meta.push(`${d.qty} remaining`);
+        if (d.available_from) meta.push(`available from ${d.available_from}`);
+        if (meta.length) parts.push(`(${meta.join(", ")})`);
+        return parts.join(" ");
+      })
       .join("\n") || "(none)";
     pantrySection = invPantry
       .map((p) => `- ${p.name}${p.qty ? " (" + p.qty + ")" : ""}`)

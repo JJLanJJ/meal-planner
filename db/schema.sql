@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS inventory_items (
   name TEXT NOT NULL,
   qty TEXT,              -- e.g. "750g", "2 pcs", "500ml"; NULL = unlimited
   source TEXT NOT NULL DEFAULT 'delivery',  -- 'delivery' | 'pantry'
-  category TEXT NOT NULL DEFAULT 'other'    -- 'meat' | 'produce' | 'dairy' | 'other'
+  category TEXT NOT NULL DEFAULT 'other',   -- 'meat' | 'produce' | 'dairy' | 'other'
+  available_from TEXT    -- ISO YYYY-MM-DD; NULL = available immediately
 );
 CREATE INDEX IF NOT EXISTS idx_inventory_plan ON inventory_items(plan_id);

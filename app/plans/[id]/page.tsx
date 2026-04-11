@@ -67,7 +67,9 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         })}
       </div>
 
-      {inventory.length > 0 && <Inventory planId={plan.id} items={inventory} />}
+      {inventory.length > 0 && (
+        <Inventory planId={plan.id} items={inventory} hasUncookedMeals={left > 0} />
+      )}
 
       <DeletePlan planId={plan.id} />
 

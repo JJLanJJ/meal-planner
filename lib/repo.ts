@@ -340,23 +340,88 @@ export async function listInventory(planId: number): Promise<InventoryItemRow[]>
 
 export async function populateInventory(
   planId: number,
-  deliveryItems: DeliveryItem[],
+  deliveryItems: (DeliveryItem & { available_from?: string })[],
   pantryItems: PantryItemRow[],
 ): Promise<void> {
   const c = await getClient();
   const stmts: { sql: string; args: any[] }[] = [];
   for (const d of deliveryItems) {
     stmts.push({
-      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category) VALUES (?, ?, ?, 'delivery', ?)",
-      args: [planId, d.name, d.qty ?? null, d.category ?? "other"],
+      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category, available_from) VALUES (?, ?, ?, 'delivery', ?, ?)",
+      args: [planId, d.name, d.qty ?? null, d.category ?? "other", d.available_from ?? null],
     });
   }
   for (const p of pantryItems) {
     stmts.push({
-      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category) VALUES (?, ?, NULL, 'pantry', ?)",
+      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category, available_from) VALUES (?, ?, NULL, 'pantry', ?, NULL)",
       args: [planId, p.name, p.category ?? "Other"],
     });
   }
+  if (stmts.length > 0) await c.batch(stmts, "write");
+}
+
+/** Add more delivery items to an existing plan's inventory. */
+export async function addToInventory(
+  planId: number,
+  items: (DeliveryItem & { available_from?: string })[],
+): Promise<void> {
+  const c = await getClient();
+  const stmts: { sql: string; args: any[] }[] = [];
+  for (const d of items) {
+    stmts.push({
+      sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category, available_from) VALUES (?, ?, ?, 'delivery', ?, ?)",
+      args: [planId, d.name, d.qty ?? null, d.category ?? "other", d.available_from ?? null],
+    });
+  }
+  if (stmts.length > 0) await c.batch(stmts, "write");
+}
+
+/** List inventory items available on or before a given date. */
+export async function listInventoryForDate(planId: number, date: string): Promise<InventoryItemRow[]> {
+  const c = await getClient();
+  const r = await c.execute({
+    sql: `SELECT * FROM inventory_items
+          WHERE plan_id = ? AND (available_from IS NULL OR available_from <= ?)
+          ORDER BY source DESC, category, name`,
+    args: [planId, date],
+  });
+  return rows<InventoryItemRow>(r.rows as unknown as Row[]);
+}
+
+/** Refund a recipe's delivery deductions back into inventory. Used before regenerating. */
+export async function refundInventory(planId: number, recipe: Recipe): Promise<void> {
+  const inventory = await listInventory(planId);
+  const c = await getClient();
+  const stmts: { sql: string; args: any[] }[] = [];
+
+  for (const ing of recipe.ingredients) {
+    if (ing.source !== "delivery") continue;
+    const usedQty = parseQty(ing.qty);
+    if (!usedQty) continue;
+
+    // Find matching inventory item
+    const match = inventory.find(
+      (inv) => inv.name.toLowerCase() === ing.name.toLowerCase() && inv.source === "delivery",
+    );
+
+    if (match && match.qty) {
+      // Item still exists — add back
+      const invQty = parseQty(match.qty);
+      if (invQty && invQty.unit === usedQty.unit) {
+        stmts.push({
+          sql: "UPDATE inventory_items SET qty = ? WHERE id = ?",
+          args: [formatQty(invQty.value + usedQty.value, invQty.unit), match.id],
+        });
+      }
+    } else if (!match) {
+      // Item was fully consumed — re-create it
+      stmts.push({
+        sql: "INSERT INTO inventory_items (plan_id, name, qty, source, category) VALUES (?, ?, ?, 'delivery', 'other')",
+        args: [planId, ing.name, ing.qty],
+      });
+    }
+  }
+
   if (stmts.length > 0) await c.batch(stmts, "write");
 }
 

@@ -3,11 +3,15 @@ import { z } from "zod";
 import { createPlan, listPlans, listPantry, populateInventory } from "@/lib/repo";
 import { DeliveryItemSchema } from "@/lib/types";
 
+const DeliveryItemWithDate = DeliveryItemSchema.extend({
+  available_from: z.string().optional(),
+});
+
 const Body = z.object({
   name: z.string().nullable().default(null),
   adults: z.number().int().min(1),
   kids: z.number().int().min(0),
-  delivery: z.array(DeliveryItemSchema),
+  delivery: z.array(DeliveryItemWithDate),
 });
 
 export async function GET(req: Request) {

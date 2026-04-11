@@ -7,14 +7,26 @@ import type { InventoryItemRow } from "@/lib/types";
 export function Inventory({
   planId,
   items: initial,
+  hasUncookedMeals,
 }: {
   planId: number;
   items: InventoryItemRow[];
+  hasUncookedMeals: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(initial);
   const [deleting, setDeleting] = useState<number | null>(null);
+
+  // Add items form
+  const [showAdd, setShowAdd] = useState(false);
+  const [addText, setAddText] = useState("");
+  const [addDate, setAddDate] = useState(new Date().toISOString().slice(0, 10));
+  const [addingItems, setAddingItems] = useState(false);
+
+  // Regenerate
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
 
   const deliveryItems = items.filter((i) => i.source === "delivery");
   const pantryItems = items.filter((i) => i.source === "pantry");
@@ -28,6 +40,60 @@ export function Inventory({
     setItems((prev) => prev.filter((i) => i.id !== itemId));
     setDeleting(null);
     router.refresh();
+  }
+
+  async function handleAddItems() {
+    if (!addText.trim()) return;
+    setAddingItems(true);
+    try {
+      // Parse the text
+      const parseRes = await fetch("/api/parse", {
+        method: "POST",
+        body: JSON.stringify({ text: addText }),
+      });
+      const { items: parsed } = await parseRes.json();
+      if (!parsed || parsed.length === 0) return;
+
+      // Add to inventory with arrival date
+      const stamped = parsed.map((item: any) => ({
+        ...item,
+        available_from: addDate,
+      }));
+      await fetch(`/api/plans/${planId}/inventory`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: stamped }),
+      });
+
+      setAddText("");
+      setShowAdd(false);
+      // Reload inventory
+      const invRes = await fetch(`/api/plans/${planId}/inventory`);
+      const { items: updated } = await invRes.json();
+      setItems(updated);
+      router.refresh();
+    } finally {
+      setAddingItems(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    setRegenerating(true);
+    setRegenError(null);
+    try {
+      const r = await fetch(`/api/plans/${planId}/regenerate`, { method: "POST" });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error ?? "Regeneration failed");
+      // Reload inventory after deductions
+      const invRes = await fetch(`/api/plans/${planId}/inventory`);
+      const { items: updated } = await invRes.json();
+      setItems(updated);
+      router.refresh();
+    } catch (e: any) {
+      setRegenError(e.message);
+    } finally {
+      setRegenerating(false);
+    }
   }
 
   return (
@@ -88,6 +154,70 @@ export function Inventory({
               ))}
             </div>
           )}
+
+          {/* Add items */}
+          {showAdd ? (
+            <div className="card p-4">
+              <p className="text-[10px] uppercase tracking-wider text-stone-500 font-medium mb-2">
+                Add delivery items
+              </p>
+              <textarea
+                className="input-field min-h-[100px] mb-2"
+                placeholder="Paste order or type items (one per line)…"
+                value={addText}
+                onChange={(e) => setAddText(e.target.value)}
+              />
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <label className="flex items-center gap-1.5 text-xs text-stone-500">
+                  Arriving
+                  <input
+                    type="date"
+                    className="arrival-date"
+                    value={addDate}
+                    onChange={(e) => setAddDate(e.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddItems}
+                  disabled={addingItems || !addText.trim()}
+                  className="btn-primary text-sm flex-1"
+                >
+                  {addingItems ? "Adding…" : "Add to inventory"}
+                </button>
+                <button
+                  onClick={() => { setShowAdd(false); setAddText(""); }}
+                  className="text-xs text-stone-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="w-full py-2.5 text-sm border border-dashed border-stone-300 rounded-xl text-stone-500 hover:border-sage hover:text-sage"
+              style={{ "--sage": "#4A6B4A" } as any}
+            >
+              + Add items to inventory
+            </button>
+          )}
+
+          {/* Regenerate remaining */}
+          {hasUncookedMeals && (
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="w-full py-2.5 text-sm rounded-xl text-white"
+              style={{ background: regenerating ? "#A8A095" : "#4A6B4A" }}
+            >
+              {regenerating ? "Regenerating… (10–20 sec)" : "✨ Regenerate remaining meals"}
+            </button>
+          )}
+          {regenError && (
+            <p className="text-xs text-red-600 mt-1">{regenError}</p>
+          )}
         </div>
       )}
 
@@ -116,6 +246,10 @@ export function Inventory({
           min-width: 50px;
           text-align: right;
         }
+        .inv-avail {
+          color: #B8A582;
+          font-size: 0.65rem;
+        }
         .inv-del {
           background: none;
           border: none;
@@ -140,10 +274,20 @@ function ItemRow({
   deleting: boolean;
   onDelete: () => void;
 }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const isFuture = item.available_from && item.available_from > today;
+
   return (
-    <div className="inv-row" style={{ opacity: deleting ? 0.4 : 1 }}>
+    <div className="inv-row" style={{ opacity: deleting ? 0.4 : isFuture ? 0.6 : 1 }}>
       <span className={`inv-dot ${item.source}`} />
-      <span className="inv-name">{item.name}</span>
+      <div className="inv-name">
+        <span>{item.name}</span>
+        {isFuture && (
+          <span className="inv-avail block">
+            arrives {new Date(item.available_from!).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+          </span>
+        )}
+      </div>
       <span className="inv-qty">{item.qty ?? "available"}</span>
       <button className="inv-del" onClick={onDelete} disabled={deleting}>
         ✕

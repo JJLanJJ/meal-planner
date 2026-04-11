@@ -42,9 +42,12 @@ export default function NewPlanPage() {
   const [butcherText, setButcherText] = useState("");
   const [grocerText, setGrocerText] = useState("");
   const [otherText, setOtherText] = useState("");
+  const [butcherDate, setButcherDate] = useState(new Date().toISOString().slice(0, 10));
+  const [grocerDate, setGrocerDate] = useState(new Date().toISOString().slice(0, 10));
+  const [otherDate, setOtherDate] = useState(new Date().toISOString().slice(0, 10));
   const [parsing, setParsing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [delivery, setDelivery] = useState<DeliveryItem[]>([]);
+  const [delivery, setDelivery] = useState<(DeliveryItem & { available_from?: string })[]>([]);
 
   // Step 2
   const [nights, setNights] = useState<NightDraft[]>([]);
@@ -69,6 +72,9 @@ export default function NewPlanPage() {
         if (d.butcherText) setButcherText(d.butcherText);
         if (d.grocerText) setGrocerText(d.grocerText);
         if (d.otherText) setOtherText(d.otherText);
+        if (d.butcherDate) setButcherDate(d.butcherDate);
+        if (d.grocerDate) setGrocerDate(d.grocerDate);
+        if (d.otherDate) setOtherDate(d.otherDate);
         if (d.delivery) setDelivery(d.delivery);
         if (d.nights) setNights(d.nights);
       } catch {}
@@ -78,9 +84,9 @@ export default function NewPlanPage() {
   useEffect(() => {
     localStorage.setItem(
       "plan-draft",
-      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, delivery, nights }),
+      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights }),
     );
-  }, [name, adults, kids, butcherText, grocerText, otherText, delivery, nights]);
+  }, [name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights]);
 
   function mergeItems(existing: DeliveryItem[], incoming: DeliveryItem[]): DeliveryItem[] {
     const seen = new Set(existing.map((d) => d.name.toLowerCase()));
@@ -98,10 +104,22 @@ export default function NewPlanPage() {
   async function parseAll() {
     setParsing(true);
     try {
-      const combined = [butcherText, grocerText, otherText].filter(Boolean).join("\n");
-      const r = await fetch("/api/parse", { method: "POST", body: JSON.stringify({ text: combined }) });
-      const j = await r.json();
-      setDelivery((prev) => mergeItems(prev, j.items ?? []));
+      // Parse each source separately so we can stamp arrival dates
+      const sources = [
+        { text: butcherText, date: butcherDate },
+        { text: grocerText, date: grocerDate },
+        { text: otherText, date: otherDate },
+      ].filter((s) => s.text.trim());
+
+      for (const src of sources) {
+        const r = await fetch("/api/parse", { method: "POST", body: JSON.stringify({ text: src.text }) });
+        const j = await r.json();
+        const stamped = (j.items ?? []).map((item: DeliveryItem) => ({
+          ...item,
+          available_from: src.date,
+        }));
+        setDelivery((prev) => mergeItems(prev, stamped));
+      }
     } finally {
       setParsing(false);
     }
@@ -277,7 +295,13 @@ export default function NewPlanPage() {
         </div>
 
         <div className="card p-5 mb-4">
-          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">Butcher order</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs uppercase tracking-wider text-stone-500 font-medium">Butcher order</label>
+            <label className="flex items-center gap-1.5 text-xs text-stone-500">
+              Arriving
+              <input type="date" className="arrival-date" value={butcherDate} onChange={(e) => setButcherDate(e.target.value)} />
+            </label>
+          </div>
           <textarea
             className="input-field min-h-[140px]"
             placeholder="Paste your butcher email here…"
@@ -287,7 +311,13 @@ export default function NewPlanPage() {
         </div>
 
         <div className="card p-5 mb-4">
-          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">Grocer order</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs uppercase tracking-wider text-stone-500 font-medium">Grocer order</label>
+            <label className="flex items-center gap-1.5 text-xs text-stone-500">
+              Arriving
+              <input type="date" className="arrival-date" value={grocerDate} onChange={(e) => setGrocerDate(e.target.value)} />
+            </label>
+          </div>
           <textarea
             className="input-field min-h-[140px]"
             placeholder="Paste your grocer email here…"
@@ -297,7 +327,13 @@ export default function NewPlanPage() {
         </div>
 
         <div className="card p-5 mb-4">
-          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">Other</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs uppercase tracking-wider text-stone-500 font-medium">Other</label>
+            <label className="flex items-center gap-1.5 text-xs text-stone-500">
+              Arriving
+              <input type="date" className="arrival-date" value={otherDate} onChange={(e) => setOtherDate(e.target.value)} />
+            </label>
+          </div>
           <textarea
             className="input-field min-h-[120px]"
             placeholder="Anything else — farmers' market, fishmonger, last-minute pickups…"
@@ -328,9 +364,16 @@ export default function NewPlanPage() {
             <p className="num mb-2">Parsed · {delivery.length} items</p>
             <ul className="text-sm divide-y divide-stone-100">
               {delivery.map((d, i) => (
-                <li key={i} className="py-2 flex justify-between">
+                <li key={i} className="py-2 flex justify-between items-center">
                   <span>{d.name}</span>
-                  <span className="text-stone-500">{d.qty}</span>
+                  <span className="text-stone-500 text-right text-xs">
+                    {d.qty}
+                    {d.available_from && d.available_from !== new Date().toISOString().slice(0, 10) && (
+                      <span className="block text-stone-400" style={{ fontSize: "0.65rem" }}>
+                        arrives {new Date(d.available_from).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                      </span>
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>
