@@ -15,6 +15,8 @@ export interface SuggestInput {
   adults: number;
   kids: number;
   recentTitles: string[]; // last 30 days, exclude these to keep variety
+  dietary?: string; // free-text dietary requirements (e.g. "vegetarian, low sodium")
+  excluded?: string[]; // ingredients the user dislikes / wants avoided
 }
 
 export const SYSTEM_PROMPT = `You are a personal home chef writing recipe cards for a single household. Your job is to plan dinners that use the ingredients the family already has.
@@ -36,10 +38,14 @@ Rules:
 - Keep instructions actionable. Number them implicitly via array order; each step gets a "minutes" estimate.
 - difficulty must be Easy, Medium, or Hard.
 - equipment: list every piece of kitchen equipment needed (e.g. "Large frying pan", "Baking tray", "Blender", "Saucepan"). Be specific — say "Large deep frying pan" not just "Pan".
+- If DIETARY requirements are given, every recipe MUST satisfy them (treat as a hard constraint, not a preference).
+- If AVOID ingredients are listed, do NOT use them in any recipe — not as delivery, pantry, or to-buy. Substitute freely. Ignore pantry staples that the user has flagged even if they are in the pantry list.
+- Every recipe MUST include nutrition estimates per adult serving: calories, protein_g, carbs_g, fat_g. Be realistic — calories for a typical dinner plate are 500-800. Estimates, not measured values.
+- Every recipe MUST include health_notes: one short sentence (≤20 words) on nutritional character (e.g. "High protein, rich in omega-3 from the salmon" or "Carb-forward comfort food — pair with a side salad").
 - Return STRICT JSON matching the provided tool schema. No prose outside the tool call.`;
 
 export function buildUserPrompt(input: SuggestInput): string {
-  const { delivery, pantry, inventory, meals, adults, kids, recentTitles } = input;
+  const { delivery, pantry, inventory, meals, adults, kids, recentTitles, dietary, excluded } = input;
 
   const nightLines = meals.map((m, i) => {
     const parts = [`${i + 1}. ${m.date}`];
@@ -76,8 +82,19 @@ export function buildUserPrompt(input: SuggestInput): string {
     pantrySection = pantry.map((p) => `- ${p}`).join("\n") || "(none)";
   }
 
+  const dietaryLine = dietary?.trim() ? dietary.trim() : "(none)";
+  const excludedLines = excluded && excluded.length > 0
+    ? excluded.map((e) => `- ${e}`).join("\n")
+    : "(none)";
+
   return `ADULTS: ${adults}
 KIDS: ${kids}
+
+DIETARY REQUIREMENTS (hard constraint — every recipe must comply):
+${dietaryLine}
+
+AVOID these ingredients (do not use in any recipe, substitute freely):
+${excludedLines}
 
 DELIVERY (use these first — quantities shown are what REMAINS, plan accordingly):
 ${deliverySection}
@@ -145,6 +162,21 @@ export const SUGGEST_TOOL = {
               items: { type: "string" },
               description: "Kitchen equipment needed, e.g. 'Large frying pan', 'Baking tray', 'Colander'",
             },
+            nutrition: {
+              type: "object",
+              description: "Estimated nutrition per adult serving.",
+              properties: {
+                calories: { type: "number", description: "kcal per adult serving" },
+                protein_g: { type: "number" },
+                carbs_g: { type: "number" },
+                fat_g: { type: "number" },
+              },
+              required: ["calories", "protein_g", "carbs_g", "fat_g"],
+            },
+            health_notes: {
+              type: "string",
+              description: "One short sentence (≤20 words) on nutritional character.",
+            },
           },
           required: [
             "title",
@@ -157,6 +189,8 @@ export const SUGGEST_TOOL = {
             "ingredients",
             "steps",
             "equipment",
+            "nutrition",
+            "health_notes",
           ],
         },
       },

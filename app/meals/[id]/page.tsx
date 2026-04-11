@@ -55,13 +55,40 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
           </p>
           <h1 className="font-display text-4xl leading-tight mb-3">{recipe.title}</h1>
           <p className="text-stone-600 text-sm mb-5">{recipe.description}</p>
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-4">
             <span className="pill">⏱ {recipe.total_minutes} min total</span>
             <span className="pill">{recipe.prep_minutes} prep</span>
             <span className="pill">{recipe.cook_minutes} cook</span>
             <span className="pill">{recipe.cuisine}</span>
             <span className="pill">{recipe.difficulty}</span>
+            {recipe.nutrition && <span className="pill">🔥 {Math.round(recipe.nutrition.calories)} kcal</span>}
           </div>
+          {recipe.nutrition && (
+            <div className="card p-4 mb-4">
+              <p className="text-[10px] uppercase tracking-wider text-stone-500 mb-2">Per adult serving</p>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <p className="font-display text-xl">{Math.round(recipe.nutrition.calories)}</p>
+                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">kcal</p>
+                </div>
+                <div>
+                  <p className="font-display text-xl">{Math.round(recipe.nutrition.protein_g)}g</p>
+                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">protein</p>
+                </div>
+                <div>
+                  <p className="font-display text-xl">{Math.round(recipe.nutrition.carbs_g)}g</p>
+                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">carbs</p>
+                </div>
+                <div>
+                  <p className="font-display text-xl">{Math.round(recipe.nutrition.fat_g)}g</p>
+                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">fat</p>
+                </div>
+              </div>
+              {recipe.health_notes && (
+                <p className="text-xs text-stone-600 mt-3 italic">{recipe.health_notes}</p>
+              )}
+            </div>
+          )}
           <MealActions mealId={meal.id} isCooked={isCooked} recipe={recipe} />
         </div>
 

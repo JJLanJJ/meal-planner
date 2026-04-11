@@ -20,6 +20,8 @@ const Body = z.object({
   adults: z.number().int().min(1),
   kids: z.number().int().min(0),
   recentTitles: z.array(z.string()).default([]),
+  dietary: z.string().optional(),
+  excluded: z.array(z.string()).default([]),
 });
 
 export async function POST(req: Request) {

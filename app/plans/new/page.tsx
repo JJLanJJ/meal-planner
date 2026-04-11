@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { DeliveryItem, Recipe } from "@/lib/types";
 import { FoodImage } from "@/components/FoodImage";
+import { CookingLoader } from "@/components/CookingLoader";
 
 type Step = 1 | 2 | 3;
 
@@ -52,6 +53,9 @@ export default function NewPlanPage() {
   // Step 2
   const [nights, setNights] = useState<NightDraft[]>([]);
   const [pickerDate, setPickerDate] = useState<string | null>(null);
+  const [dietary, setDietary] = useState("");
+  const [excludedDelivery, setExcludedDelivery] = useState<string[]>([]);
+  const [excludedCustom, setExcludedCustom] = useState("");
 
   // Step 3
   const [generating, setGenerating] = useState(false);
@@ -77,6 +81,9 @@ export default function NewPlanPage() {
         if (d.otherDate) setOtherDate(d.otherDate);
         if (d.delivery) setDelivery(d.delivery);
         if (d.nights) setNights(d.nights);
+        if (d.dietary) setDietary(d.dietary);
+        if (d.excludedDelivery) setExcludedDelivery(d.excludedDelivery);
+        if (d.excludedCustom) setExcludedCustom(d.excludedCustom);
       } catch {}
     }
   }, []);
@@ -84,9 +91,9 @@ export default function NewPlanPage() {
   useEffect(() => {
     localStorage.setItem(
       "plan-draft",
-      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights }),
+      JSON.stringify({ name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights, dietary, excludedDelivery, excludedCustom }),
     );
-  }, [name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights]);
+  }, [name, adults, kids, butcherText, grocerText, otherText, butcherDate, grocerDate, otherDate, delivery, nights, dietary, excludedDelivery, excludedCustom]);
 
   function mergeItems(existing: DeliveryItem[], incoming: DeliveryItem[]): DeliveryItem[] {
     const seen = new Set(existing.map((d) => d.name.toLowerCase()));
@@ -175,6 +182,20 @@ export default function NewPlanPage() {
     setNights((prev) => prev.map((n) => (n.date === date ? { ...n, difficulty } : n)));
   }
 
+  function toggleExcluded(name: string) {
+    setExcludedDelivery((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+    );
+  }
+
+  function getAllExcluded(): string[] {
+    const custom = excludedCustom
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return [...excludedDelivery, ...custom];
+  }
+
   async function generate() {
     setGenerating(true);
     setError(null);
@@ -191,10 +212,25 @@ export default function NewPlanPage() {
           adults,
           kids,
           recentTitles: [],
+          dietary: dietary || undefined,
+          excluded: getAllExcluded(),
         }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Generation failed");
+
+      // Pre-fetch food images in parallel while the loader is still visible.
+      // Pexels is fast, and this ensures cards render with photos ready.
+      await Promise.all(
+        (j.recipes as Recipe[]).map((rec) =>
+          fetch("/api/food-image/cache", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ title: rec.title, cuisine: rec.cuisine }),
+          }).catch(() => {}),
+        ),
+      );
+
       setRecipes(j.recipes);
     } catch (e: any) {
       setError(e.message);
@@ -223,6 +259,8 @@ export default function NewPlanPage() {
           adults,
           kids,
           recentTitles,
+          dietary: dietary || undefined,
+          excluded: getAllExcluded(),
         }),
       });
       const j = await r.json();
@@ -230,6 +268,12 @@ export default function NewPlanPage() {
 
       const newRecipe = j.recipes?.[0];
       if (newRecipe) {
+        // Pre-fetch image before revealing the new card.
+        await fetch("/api/food-image/cache", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ title: newRecipe.title, cuisine: newRecipe.cuisine }),
+        }).catch(() => {});
         setRecipes((prev) => prev!.map((old, i) => (i === idx ? newRecipe : old)));
       }
     } catch (e: any) {
@@ -242,25 +286,38 @@ export default function NewPlanPage() {
   async function savePlan() {
     if (!recipes || saving) return;
     setSaving(true);
-    const planRes = await fetch("/api/plans", {
-      method: "POST",
-      body: JSON.stringify({ name: name || null, adults, kids, delivery }),
-    });
-    const { id: planId } = await planRes.json();
-
-    for (let i = 0; i < nights.length; i++) {
-      await fetch(`/api/plans/${planId}/meals`, {
+    setError(null);
+    try {
+      const planRes = await fetch("/api/plans", {
         method: "POST",
-        body: JSON.stringify({
-          scheduled_date: nights[i].date,
-          cuisine_pref: nights[i].cuisine,
-          recipe: recipes[i],
-        }),
+        body: JSON.stringify({ name: name || null, adults, kids, delivery }),
       });
-    }
+      const planJson = await planRes.json();
+      if (!planRes.ok) throw new Error(planJson.error ?? `Plan create failed (${planRes.status})`);
+      const planId = planJson.id;
+      if (planId == null) throw new Error("Plan create returned no id");
 
-    localStorage.removeItem("plan-draft");
-    router.push(`/plans/${planId}`);
+      for (let i = 0; i < nights.length; i++) {
+        const mealRes = await fetch(`/api/plans/${planId}/meals`, {
+          method: "POST",
+          body: JSON.stringify({
+            scheduled_date: nights[i].date,
+            cuisine_pref: nights[i].cuisine,
+            recipe: recipes[i],
+          }),
+        });
+        if (!mealRes.ok) {
+          const j = await mealRes.json().catch(() => ({}));
+          throw new Error(j.error ?? `Meal ${i + 1} save failed (${mealRes.status})`);
+        }
+      }
+
+      localStorage.removeItem("plan-draft");
+      router.push(`/plans/${planId}`);
+    } catch (e: any) {
+      setError(e.message ?? "Save failed");
+      setSaving(false);
+    }
   }
 
   // ─────── Step 1 ───────
@@ -481,6 +538,60 @@ export default function NewPlanPage() {
           />
         )}
 
+        <div className="card p-5 mt-6">
+          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">
+            Dietary requirements <span className="text-stone-400 text-[10px]">(optional)</span>
+          </label>
+          <input
+            className="input-field"
+            value={dietary}
+            onChange={(e) => setDietary(e.target.value)}
+            placeholder="e.g. vegetarian, gluten-free, low sodium, dairy-free…"
+          />
+        </div>
+
+        <div className="card p-5 mt-4">
+          <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block font-medium">
+            Ingredients to avoid <span className="text-stone-400 text-[10px]">(optional)</span>
+          </label>
+
+          {delivery.length > 0 && (
+            <>
+              <p className="text-xs text-stone-500 mb-2">Tap any delivery item to exclude it:</p>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {delivery.map((d) => {
+                  const isExcluded = excludedDelivery.includes(d.name);
+                  return (
+                    <button
+                      key={d.name}
+                      onClick={() => toggleExcluded(d.name)}
+                      className="pill"
+                      style={{
+                        border: isExcluded ? "1.5px solid #C65A3A" : "1.5px solid transparent",
+                        opacity: isExcluded ? 0.55 : 1,
+                        textDecoration: isExcluded ? "line-through" : "none",
+                        color: isExcluded ? "#C65A3A" : undefined,
+                      }}
+                    >
+                      {d.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <label className="text-[10px] uppercase tracking-wider text-stone-500 mb-1.5 block">
+            Other ingredients to avoid
+          </label>
+          <input
+            className="input-field"
+            value={excludedCustom}
+            onChange={(e) => setExcludedCustom(e.target.value)}
+            placeholder="e.g. coriander, olives, blue cheese (comma-separated)"
+          />
+        </div>
+
         <button
           className="btn-primary w-full mt-4"
           disabled={nights.length === 0}
@@ -507,11 +618,7 @@ export default function NewPlanPage() {
           ✨ Generate {nights.length} meals
         </button>
       )}
-      {generating && (
-        <div className="card p-8 text-center">
-          <p className="text-sm text-stone-500">Cooking up ideas… (10–20 sec)</p>
-        </div>
-      )}
+      {generating && <CookingLoader message="Cooking up ideas… (10–20 sec)" />}
       {error && (
         <div className="card p-4 text-sm text-red-700 mb-4">{error}</div>
       )}
@@ -522,8 +629,15 @@ export default function NewPlanPage() {
             {recipes.map((r, i) => {
               const toBuy = r.ingredients.filter((g) => g.source === "to-buy");
               const isSwapping = swappingIdx === i;
+              if (isSwapping) {
+                return (
+                  <div key={i}>
+                    <CookingLoader message="Swapping meal…" />
+                  </div>
+                );
+              }
               return (
-                <div key={i} className="card overflow-hidden" style={{ opacity: isSwapping ? 0.5 : 1, transition: "opacity 0.3s" }}>
+                <div key={i} className="card overflow-hidden">
                   <FoodImage title={r.title} cuisine={r.cuisine} height={160} />
                   <div className="p-4">
                     <p className="text-[10px] text-stone-500 uppercase tracking-wider">
@@ -534,7 +648,11 @@ export default function NewPlanPage() {
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       <span className="pill">⏱ {r.total_minutes} min</span>
                       <span className="pill">{r.difficulty}</span>
+                      {r.nutrition && <span className="pill">🔥 {Math.round(r.nutrition.calories)} kcal</span>}
                     </div>
+                    {r.health_notes && (
+                      <p className="text-[11px] text-stone-500 mt-2 italic">{r.health_notes}</p>
+                    )}
 
                     {toBuy.length > 0 && (
                       <div className="mt-3 pt-3" style={{ borderTop: "1px solid #ECE6DC" }}>
@@ -564,9 +682,15 @@ export default function NewPlanPage() {
               );
             })}
           </div>
-          <button className="btn-primary w-full mt-6" onClick={savePlan} disabled={saving}>
-            {saving ? "Saving…" : "Save plan ✓"}
-          </button>
+          {saving ? (
+            <div className="mt-6">
+              <CookingLoader message="Saving your plan…" />
+            </div>
+          ) : (
+            <button className="btn-primary w-full mt-6" onClick={savePlan}>
+              Save plan ✓
+            </button>
+          )}
         </>
       )}
     </div>

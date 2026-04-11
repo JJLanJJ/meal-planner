@@ -17,6 +17,14 @@ export const RecipeStepSchema = z.object({
 });
 export type RecipeStep = z.infer<typeof RecipeStepSchema>;
 
+export const NutritionSchema = z.object({
+  calories: z.number().nonnegative(),
+  protein_g: z.number().nonnegative(),
+  carbs_g: z.number().nonnegative(),
+  fat_g: z.number().nonnegative(),
+});
+export type Nutrition = z.infer<typeof NutritionSchema>;
+
 export const RecipeSchema = z.object({
   title: z.string(),
   description: z.string(),
@@ -28,6 +36,10 @@ export const RecipeSchema = z.object({
   ingredients: z.array(RecipeIngredientSchema),
   steps: z.array(RecipeStepSchema),
   equipment: z.array(z.string()).default([]),
+  // Nutrition per adult serving. Optional so recipes generated before this
+  // field was added still parse cleanly from recipe_json.
+  nutrition: NutritionSchema.optional(),
+  health_notes: z.string().optional(),
 });
 export type Recipe = z.infer<typeof RecipeSchema>;
 
