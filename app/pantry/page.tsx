@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import {
   searchFoods,
-  categoriseFood,
   findFoodCategory,
   PANTRY_CATEGORIES,
   type FoodSuggestion,
@@ -23,7 +22,8 @@ export default function PantryPage() {
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [editQtyVal, setEditQtyVal] = useState("");
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
-  const [pendingAdd, setPendingAdd] = useState<{ name: string; qty: string | null } | null>(null);
+  const [pendingQueue, setPendingQueue] = useState<{ name: string; qty: string | null }[]>([]);
+  const addedFromPhotoRef = useRef<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const photoCameraRef = useRef<HTMLInputElement>(null);
@@ -99,11 +99,15 @@ export default function PantryPage() {
     const category = findFoodCategory(trimmed);
     if (category == null) {
       // Unknown — ask the user to pick a category before adding.
-      setPendingAdd({ name: trimmed, qty: qty.trim() || null });
+      setPendingQueue([{ name: trimmed, qty: qty.trim() || null }]);
       setShowSuggestions(false);
       return;
     }
     await commitAdd(trimmed, qty.trim() || null, category);
+    setName("");
+    setQty("");
+    setSuggestions([]);
+    setShowSuggestions(false);
   }
 
   async function commitAdd(itemName: string, itemQty: string | null, category: string) {
@@ -112,12 +116,44 @@ export default function PantryPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: itemName, category, qty: itemQty }),
     });
+    load();
+  }
+
+  async function pickCategoryForPending(category: string) {
+    const [head, ...rest] = pendingQueue;
+    if (!head) return;
+    await commitAdd(head.name, head.qty, category);
+    addedFromPhotoRef.current.push(head.name);
+    setPendingQueue(rest);
+    if (rest.length === 0) {
+      finishQueue();
+    }
+  }
+
+  function skipPending() {
+    const [, ...rest] = pendingQueue;
+    setPendingQueue(rest);
+    if (rest.length === 0) {
+      finishQueue();
+    }
+  }
+
+  function finishQueue() {
     setName("");
     setQty("");
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setPendingAdd(null);
-    load();
+    const done = addedFromPhotoRef.current;
+    addedFromPhotoRef.current = [];
+    if (done.length > 0) {
+      setPhotoStatus(`Added ${formatNameList(done)}.`);
+      setTimeout(() => setPhotoStatus(null), 4000);
+    }
+  }
+
+  function formatNameList(names: string[]): string {
+    if (names.length === 0) return "";
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} and ${names[1]}`;
+    return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
   }
 
   async function remove(id: number) {
@@ -154,23 +190,40 @@ export default function PantryPage() {
         return;
       }
 
-      // Add each detected item to the pantry.
-      await Promise.all(
-        items.map((it) =>
-          fetch("/api/pantry", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: it.name,
-              category: it.category ?? categoriseFood(it.name),
-              qty: it.qty ?? null,
-            }),
-          }),
-        ),
-      );
+      // Split into auto-add (known food or specific category) and queue (unknowns).
+      const autoAdd: { name: string; qty: string | null; category: string }[] = [];
+      const queue: { name: string; qty: string | null }[] = [];
+      for (const it of items) {
+        const known = findFoodCategory(it.name);
+        const aiCat = it.category && PANTRY_CATEGORIES.includes(it.category as any)
+          ? it.category
+          : null;
+        // Trust the local food database first; then Claude's pick, but only if
+        // it's not "Other"; otherwise ask the user.
+        const category = known ?? (aiCat && aiCat !== "Other" ? aiCat : null);
+        if (category) {
+          autoAdd.push({ name: it.name, qty: it.qty ?? null, category });
+        } else {
+          queue.push({ name: it.name, qty: it.qty ?? null });
+        }
+      }
 
-      setPhotoStatus(`Added ${items.length} item${items.length === 1 ? "" : "s"}.`);
-      setTimeout(() => setPhotoStatus(null), 2500);
+      // Commit all known items in parallel.
+      await Promise.all(
+        autoAdd.map((it) => commitAdd(it.name, it.qty, it.category)),
+      );
+      const autoNames = autoAdd.map((it) => it.name);
+
+      if (queue.length > 0) {
+        // Show picker for each unknown item in turn; accumulate names so the
+        // final status message can include both auto-added and picker-added.
+        addedFromPhotoRef.current = [...autoNames];
+        setPendingQueue(queue);
+        setPhotoStatus(null);
+      } else {
+        setPhotoStatus(`Added ${formatNameList(autoNames)}.`);
+        setTimeout(() => setPhotoStatus(null), 4000);
+      }
       load();
     } catch (e: any) {
       alert(`Photo upload failed: ${e?.message ?? e}`);
@@ -332,30 +385,32 @@ export default function PantryPage() {
         </div>
       ))}
 
-      {pendingAdd && (
+      {pendingQueue.length > 0 && (
         <div
           className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
-          onClick={() => setPendingAdd(null)}
+          onClick={skipPending}
         >
           <div
             className="bg-cream w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5"
             style={{ background: "#FAF7F2" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="num text-center">New item</p>
+            <p className="num text-center">
+              {pendingQueue.length > 1 ? `New item · ${pendingQueue.length} left` : "New item"}
+            </p>
             <h2 className="font-display text-2xl text-center mt-1 mb-1">
-              Which category for &ldquo;{pendingAdd.name}&rdquo;?
+              Which category for &ldquo;{pendingQueue[0].name}&rdquo;?
             </h2>
             <p className="text-xs text-stone-500 text-center mb-4">
-              I didn&rsquo;t recognise this one — pick where it belongs.
+              Pick where it belongs — I won&rsquo;t file anything under Other.
             </p>
             <div className="flex flex-wrap gap-2 mb-2 justify-center">
-              {PANTRY_CATEGORIES.map((cat) => (
+              {PANTRY_CATEGORIES.filter((c) => c !== "Other").map((cat) => (
                 <button
                   key={cat}
                   className="pill"
                   style={{ border: "1.5px solid transparent", padding: "0.5rem 0.9rem" }}
-                  onClick={() => commitAdd(pendingAdd.name, pendingAdd.qty, cat)}
+                  onClick={() => pickCategoryForPending(cat)}
                 >
                   {cat}
                 </button>
@@ -363,9 +418,9 @@ export default function PantryPage() {
             </div>
             <button
               className="btn-ghost w-full mt-3"
-              onClick={() => setPendingAdd(null)}
+              onClick={skipPending}
             >
-              Cancel
+              Skip this item
             </button>
           </div>
         </div>

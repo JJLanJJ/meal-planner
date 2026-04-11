@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DeliveryItemSchema } from "@/lib/types";
+import { PANTRY_CATEGORIES } from "@/lib/food-suggestions";
 
 export const maxDuration = 30;
 
 const Body = z.object({
   media_type: z.string(),
   data: z.string(),
+});
+
+const PantryPhotoItemSchema = z.object({
+  name: z.string(),
+  qty: z.string().optional(),
+  category: z.enum(PANTRY_CATEGORIES as unknown as [string, ...string[]]).optional(),
 });
 
 const PANTRY_VISION_TOOL = {
@@ -33,10 +39,12 @@ const PANTRY_VISION_TOOL = {
             },
             category: {
               type: "string",
-              enum: ["meat", "produce", "dairy", "other"],
+              enum: [...PANTRY_CATEGORIES],
+              description:
+                "Pick the single best pantry category for this item. Prefer a specific category (e.g. 'Sauces & Condiments' for peanut butter, 'Nuts & Seeds' for raw almonds). Only use 'Other' if genuinely no other category fits.",
             },
           },
-          required: ["name", "category"],
+          required: ["name"],
         },
       },
     },
@@ -97,7 +105,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Model did not return a tool call", raw: json.content }, { status: 502 });
   }
 
-  const parsed = z.object({ items: z.array(DeliveryItemSchema) }).safeParse(toolUse.input);
+  const parsed = z.object({ items: z.array(PantryPhotoItemSchema) }).safeParse(toolUse.input);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Items schema validation failed", details: parsed.error.message, raw: toolUse.input },
