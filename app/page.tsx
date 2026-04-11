@@ -70,7 +70,7 @@ export default async function HomePage() {
           <p className="num mb-2">Tonight&apos;s dinner</p>
           {tonight && tonightRecipe ? (
             <div className="card overflow-hidden mb-6">
-              <FoodImage title={tonightRecipe.title} height={200} />
+              <FoodImage title={tonightRecipe.title} cuisine={tonightRecipe.cuisine} height={200} />
               <div className="p-5">
                 <p className="text-xs text-stone-500 mb-1">
                   {tonight.plan_name ? tonight.plan_name : "From plan"} · {fmtDate(tonight.scheduled_date)}

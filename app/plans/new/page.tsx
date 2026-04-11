@@ -481,7 +481,7 @@ export default function NewPlanPage() {
               const isSwapping = swappingIdx === i;
               return (
                 <div key={i} className="card overflow-hidden" style={{ opacity: isSwapping ? 0.5 : 1, transition: "opacity 0.3s" }}>
-                  <FoodImage title={r.title} height={160} />
+                  <FoodImage title={r.title} cuisine={r.cuisine} height={160} />
                   <div className="p-4">
                     <p className="text-[10px] text-stone-500 uppercase tracking-wider">
                       {new Date(nights[i].date).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} · {r.cuisine}
