@@ -69,7 +69,7 @@ export function FoodImage({
 
   // Once we know there's no cached image, try to generate one in background
   useEffect(() => {
-    if (triedCache && !src) {
+    if (triedCache && !src && !refreshing) {
       fetch(`/api/food-image/cache`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -81,7 +81,7 @@ export function FoodImage({
         })
         .catch(() => {});
     }
-  }, [triedCache, src, title, cuisine, description, cacheUrl]);
+  }, [triedCache, src, refreshing, title, cuisine, description, cacheUrl]);
 
   function handleRefresh() {
     if (refreshing) return;

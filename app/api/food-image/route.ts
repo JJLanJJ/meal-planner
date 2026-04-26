@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     return new Response(buf as BodyInit, {
       headers: {
         "content-type": mime,
-        "cache-control": "public, max-age=31536000, immutable",
+        "cache-control": "no-store",
       },
     });
   }
