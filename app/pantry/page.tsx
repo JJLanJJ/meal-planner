@@ -355,52 +355,65 @@ export default function KitchenPage() {
               <div className="card p-4 text-center text-xs text-stone-400">
                 Nothing here yet — use the form above to add items
               </div>
-            ) : (
-              <div className="card">
-                {locItems.map((it) => (
-                  <div key={it.id} className="row">
-                    <span className="flex-1 text-sm">{it.name}</span>
-                    {editingQty === it.id ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          className="qty-input"
-                          value={editQtyVal}
-                          onChange={(e) => setEditQtyVal(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") saveQty(it.id);
-                            if (e.key === "Escape") setEditingQty(null);
-                          }}
-                          placeholder="e.g. 500g"
-                          autoFocus
-                        />
-                        <button onClick={() => saveQty(it.id)} className="text-xs" style={{ color: "#4A6B4A" }}>✓</button>
-                        <button onClick={() => setEditingQty(null)} className="text-xs text-stone-400">✕</button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => { setEditingQty(it.id); setEditQtyVal(it.qty ?? ""); }}
-                        className="qty-badge"
-                        title="Click to set quantity"
-                      >
-                        {it.qty ?? "∞"}
-                      </button>
-                    )}
-                    {/* Move to another location */}
-                    <div className="relative group">
-                      <button className="move-btn" title="Move to…">⇄</button>
-                      <div className="move-menu">
-                        {LOCATIONS.filter((l) => l.key !== loc.key).map((l) => (
-                          <button key={l.key} onClick={() => moveItem(it.id, l.key)} className="move-option">
-                            {l.icon} {l.label}
-                          </button>
-                        ))}
-                      </div>
+            ) : (() => {
+              // Group by category within this location
+              const catMap = new Map<string, Item[]>();
+              for (const it of locItems) {
+                if (!catMap.has(it.category)) catMap.set(it.category, []);
+                catMap.get(it.category)!.push(it);
+              }
+              const renderRow = (it: Item) => (
+                <div key={it.id} className="row">
+                  <span className="flex-1 text-sm">{it.name}</span>
+                  {editingQty === it.id ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        className="qty-input"
+                        value={editQtyVal}
+                        onChange={(e) => setEditQtyVal(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveQty(it.id);
+                          if (e.key === "Escape") setEditingQty(null);
+                        }}
+                        placeholder="e.g. 500g"
+                        autoFocus
+                      />
+                      <button onClick={() => saveQty(it.id)} className="text-xs" style={{ color: "#4A6B4A" }}>✓</button>
+                      <button onClick={() => setEditingQty(null)} className="text-xs text-stone-400">✕</button>
                     </div>
-                    <button onClick={() => remove(it.id)} className="del-btn">×</button>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingQty(it.id); setEditQtyVal(it.qty ?? ""); }}
+                      className="qty-badge"
+                      title="Click to set quantity"
+                    >
+                      {it.qty ?? "∞"}
+                    </button>
+                  )}
+                  <div className="relative group">
+                    <button className="move-btn" title="Move to…">⇄</button>
+                    <div className="move-menu">
+                      {LOCATIONS.filter((l) => l.key !== loc.key).map((l) => (
+                        <button key={l.key} onClick={() => moveItem(it.id, l.key)} className="move-option">
+                          {l.icon} {l.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                  <button onClick={() => remove(it.id)} className="del-btn">×</button>
+                </div>
+              );
+              return (
+                <div>
+                  {[...catMap.entries()].map(([cat, catItems]) => (
+                    <div key={cat} className="mb-3">
+                      <p className="cat-label">{cat}</p>
+                      <div className="card">{catItems.map(renderRow)}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         );
       })}
@@ -495,6 +508,10 @@ export default function KitchenPage() {
       )}
 
       <style>{`
+        .cat-label {
+          font-size: .65rem; text-transform: uppercase; letter-spacing: .1em;
+          color: #A8A095; font-family: var(--font-display); padding: .1rem .25rem .4rem; margin-left: .25rem;
+        }
         .row { display: flex; align-items: center; gap: .6rem; padding: .7rem 1rem; border-bottom: 1px solid #ECE6DC; }
         .row:last-child { border-bottom: none; }
         .qty-badge {
