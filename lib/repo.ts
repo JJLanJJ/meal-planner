@@ -63,7 +63,23 @@ export async function updatePlan(
 
 export async function deletePlan(id: number): Promise<void> {
   const c = await getClient();
-  await c.execute({ sql: "DELETE FROM plans WHERE id = ?", args: [id] });
+  // Disable FK constraints so deleting the plan doesn't cascade to cooked meals
+  await c.execute({ sql: "PRAGMA foreign_keys = OFF", args: [] });
+  try {
+    // Clean up shopping items linked to non-cooked meals in this plan
+    await c.execute({
+      sql: "DELETE FROM shopping_items WHERE source_meal_id IN (SELECT id FROM meals WHERE plan_id = ? AND status != 'cooked')",
+      args: [id],
+    });
+    // Delete non-cooked meals only
+    await c.execute({ sql: "DELETE FROM meals WHERE plan_id = ? AND status != 'cooked'", args: [id] });
+    // Delete inventory items for the plan
+    await c.execute({ sql: "DELETE FROM inventory_items WHERE plan_id = ?", args: [id] });
+    // Delete the plan — cooked meals are left intact with a now-orphaned plan_id
+    await c.execute({ sql: "DELETE FROM plans WHERE id = ?", args: [id] });
+  } finally {
+    await c.execute({ sql: "PRAGMA foreign_keys = ON", args: [] });
+  }
 }
 
 // ────────── Meals ──────────
@@ -340,7 +356,7 @@ export async function listHistory(opts?: {
   const r = await c.execute({
     sql: `SELECT m.*, p.name as plan_name
           FROM meals m
-          JOIN plans p ON p.id = m.plan_id
+          LEFT JOIN plans p ON p.id = m.plan_id
           WHERE ${where.join(" AND ")}
           ORDER BY m.cooked_at DESC`,
     args,
