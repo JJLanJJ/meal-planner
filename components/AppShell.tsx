@@ -23,7 +23,6 @@ const NAV: { section: string; items: { href: string; icon: string; label: string
     section: "Library",
     items: [
       { href: "/plans", icon: "▥", label: "Plans" },
-      { href: "/inventory", icon: "▦", label: "Inventory" },
       { href: "/favourites", icon: "♥", label: "Favourites" },
       { href: "/pantry", icon: "▤", label: "My kitchen" },
       { href: "/history", icon: "↺", label: "History" },

@@ -12,7 +12,7 @@ import { compressImageToBase64 } from "@/lib/image-upload";
 
 type Item = { id: number; name: string; qty: string | null; category: string; location: string };
 type DeliveryItem = {
-  id: number; name: string; qty: string | null;
+  id: number; name: string; qty: string | null; category: string;
   plan_name: string | null; plan_created_at: string; available_from: string | null;
 };
 
@@ -38,6 +38,8 @@ export default function KitchenPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [editQtyVal, setEditQtyVal] = useState("");
+  const [editingDeliveryQty, setEditingDeliveryQty] = useState<number | null>(null);
+  const [editDeliveryQtyVal, setEditDeliveryQtyVal] = useState("");
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
   const [pendingQueue, setPendingQueue] = useState<{ name: string; qty: string | null; location: LocationKey }[]>([]);
   const addedFromPhotoRef = useRef<string[]>([]);
@@ -238,6 +240,21 @@ export default function KitchenPage() {
     load();
   }
 
+  async function saveDeliveryQty(id: number) {
+    await fetch("/api/inventory", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, qty: editDeliveryQtyVal.trim() || null }),
+    });
+    setEditingDeliveryQty(null);
+    load();
+  }
+
+  async function removeDeliveryItem(id: number) {
+    await fetch(`/api/inventory?id=${id}`, { method: "DELETE" });
+    load();
+  }
+
   const byLocation = (loc: string) => items.filter((it) => it.location === loc);
 
   // Group delivery items by plan
@@ -340,6 +357,79 @@ export default function KitchenPage() {
         </div>
       </div>
 
+      {/* Deliveries — editable remaining inventory from active plans */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span style={{ fontSize: "1.1rem" }}>🚚</span>
+          <p className="num">Deliveries</p>
+          <span className="text-xs text-stone-400">· remaining from active plans</span>
+          <span className="ml-auto text-xs text-stone-400">{deliveryItems.length}</span>
+        </div>
+        {deliveryItems.length === 0 ? (
+          <div className="card p-4 text-center text-xs text-stone-400">
+            No active deliveries — start a plan to track what&rsquo;s arrived
+          </div>
+        ) : (
+          [...deliveryByPlan.values()].map((group) => {
+            // Group by category within this delivery plan
+            const catMap = new Map<string, DeliveryItem[]>();
+            for (const d of group.items) {
+              const cat = d.category ?? "Other";
+              if (!catMap.has(cat)) catMap.set(cat, []);
+              catMap.get(cat)!.push(d);
+            }
+            return (
+              <div key={group.planDate} className="mb-3">
+                <p className="text-xs text-stone-400 mb-1 px-1">{group.planName}</p>
+                <div>
+                  {[...catMap.entries()].map(([cat, catItems]) => (
+                    <div key={cat} className="mb-3">
+                      <p className="cat-label">{cat}</p>
+                      <div className="card">
+                        {catItems.map((d) => (
+                          <div key={d.id} className="row">
+                            <span className="flex-1 text-sm">{d.name}</span>
+                            {d.available_from && new Date(d.available_from) > new Date() && (
+                              <span className="text-xs text-stone-400 mr-1">arrives {fmtDate(d.available_from)}</span>
+                            )}
+                            {editingDeliveryQty === d.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  className="qty-input"
+                                  value={editDeliveryQtyVal}
+                                  onChange={(e) => setEditDeliveryQtyVal(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveDeliveryQty(d.id);
+                                    if (e.key === "Escape") setEditingDeliveryQty(null);
+                                  }}
+                                  placeholder="e.g. 500g"
+                                  autoFocus
+                                />
+                                <button onClick={() => saveDeliveryQty(d.id)} className="text-xs" style={{ color: "#4A6B4A" }}>✓</button>
+                                <button onClick={() => setEditingDeliveryQty(null)} className="text-xs text-stone-400">✕</button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => { setEditingDeliveryQty(d.id); setEditDeliveryQtyVal(d.qty ?? ""); }}
+                                className="qty-badge"
+                                title="Click to update quantity"
+                              >
+                                {d.qty ?? "∞"}
+                              </button>
+                            )}
+                            <button onClick={() => removeDeliveryItem(d.id)} className="del-btn">×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
       {/* Kitchen sections */}
       {LOCATIONS.map((loc) => {
         const locItems = byLocation(loc.key);
@@ -418,34 +508,6 @@ export default function KitchenPage() {
         );
       })}
 
-      {/* From deliveries — read-only view of active plan inventory */}
-      {deliveryItems.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <span style={{ fontSize: "1.1rem" }}>🚚</span>
-            <p className="num">From your deliveries</p>
-            <span className="text-xs text-stone-400">· remaining inventory from active plans</span>
-          </div>
-          {[...deliveryByPlan.values()].map((group) => (
-            <div key={group.planDate} className="mb-3">
-              <p className="text-xs text-stone-400 mb-1 px-1">{group.planName}</p>
-              <div className="card">
-                {group.items.map((d) => (
-                  <div key={d.id} className="row">
-                    <span className="flex-1 text-sm">{d.name}</span>
-                    {d.available_from && (
-                      <span className="text-xs text-stone-400 mr-2">from {fmtDate(d.available_from)}</span>
-                    )}
-                    <span className="qty-badge" style={{ cursor: "default" }}>
-                      {d.qty ?? "∞"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Category + location picker modal */}
       {pendingQueue.length > 0 && (
