@@ -55,15 +55,18 @@ export function MealActions({
   isCooked,
   rating,
   recipe,
+  planId,
 }: {
   mealId: number;
   isCooked: boolean;
   rating: number | null;
   recipe: Recipe;
+  planId: number;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [favSaved, setFavSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function toggleCooked() {
     setBusy(true);
@@ -74,6 +77,12 @@ export function MealActions({
     });
     setBusy(false);
     router.refresh();
+  }
+
+  async function handleDelete() {
+    setBusy(true);
+    await fetch(`/api/meals/${mealId}`, { method: "DELETE" });
+    router.push(`/plans/${planId}`);
   }
 
   async function favourite() {
@@ -96,6 +105,35 @@ export function MealActions({
       <button onClick={favourite} disabled={busy || favSaved} className="text-stone-500 text-sm py-2">
         {favSaved ? "♥ Saved to favourites" : "♡ Save to favourites"}
       </button>
+      {!isCooked && (
+        confirmDelete ? (
+          <div className="flex gap-2 pt-1">
+            <button
+              className="flex-1 text-sm py-2 rounded-xl"
+              style={{ background: "#fef2f0", color: "#c0392b", border: "none", cursor: "pointer", fontWeight: 500 }}
+              onClick={handleDelete}
+              disabled={busy}
+            >
+              Yes, delete meal
+            </button>
+            <button
+              className="flex-1 text-sm py-2 rounded-xl"
+              style={{ background: "#f1ece2", color: "#1f1b16", border: "none", cursor: "pointer" }}
+              onClick={() => setConfirmDelete(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="text-stone-400 text-sm py-1"
+            style={{ fontSize: "0.8rem" }}
+          >
+            🗑 Delete meal
+          </button>
+        )
+      )}
     </div>
   );
 }

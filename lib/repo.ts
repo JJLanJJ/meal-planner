@@ -131,6 +131,12 @@ export async function setMealRecipe(id: number, recipe: Recipe): Promise<void> {
   await syncShoppingForMeal(id, recipe);
 }
 
+export async function deleteMeal(id: number): Promise<void> {
+  const c = await getClient();
+  await c.execute({ sql: "DELETE FROM shopping_items WHERE source_meal_id = ?", args: [id] });
+  await c.execute({ sql: "DELETE FROM meals WHERE id = ?", args: [id] });
+}
+
 export async function markMealCooked(id: number): Promise<void> {
   const c = await getClient();
   await c.execute({

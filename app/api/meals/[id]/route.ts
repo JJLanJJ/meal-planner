@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   getMeal,
+  deleteMeal,
   markMealCooked,
   setMealRecipe,
   unmarkMealCooked,
@@ -52,5 +53,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     await unmarkMealCooked(mealId);
   }
   if (parsed.data.rating !== undefined) await updateMealRating(mealId, parsed.data.rating);
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(_: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const meal = await getMeal(Number(id));
+  if (!meal) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (meal.status === "cooked") return NextResponse.json({ error: "cannot delete a cooked meal" }, { status: 400 });
+  await deleteMeal(Number(id));
   return NextResponse.json({ ok: true });
 }
