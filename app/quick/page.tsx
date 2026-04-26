@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { searchFoods, type FoodSuggestion } from "@/lib/food-suggestions";
 
 interface KitchenItem {
   id: number;
@@ -17,10 +18,14 @@ type TimeLimit = 30 | 45 | 60 | null;
 export default function QuickMealPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Manual ingredient entry
   const [inputValue, setInputValue] = useState("");
   const [manualItems, setManualItems] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<FoodSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
 
   // Kitchen items from API (secondary, opt-in)
   const [kitchenItems, setKitchenItems] = useState<KitchenItem[]>([]);
@@ -39,6 +44,20 @@ export default function QuickMealPage() {
   const [error, setError] = useState<string | null>(null);
   const [conflictTitle, setConflictTitle] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState(false);
+
+  // Dismiss suggestions on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node) &&
+        inputRef.current && !inputRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   // Load household defaults + today's meal check on mount
   useEffect(() => {
@@ -84,8 +103,8 @@ export default function QuickMealPage() {
     }
   }, [kitchenItems.length]);
 
-  const addManual = useCallback(() => {
-    const val = inputValue.trim();
+  const addManual = useCallback((override?: string) => {
+    const val = (override ?? inputValue).trim();
     if (!val) return;
     // support comma-separated e.g. "chicken, garlic, lemon"
     const parts = val.split(",").map((s) => s.trim()).filter(Boolean);
@@ -94,8 +113,44 @@ export default function QuickMealPage() {
       return [...prev, ...parts.filter((p) => !existing.has(p.toLowerCase()))];
     });
     setInputValue("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSelectedIdx(-1);
     inputRef.current?.focus();
   }, [inputValue]);
+
+  const pickSuggestion = useCallback((s: FoodSuggestion) => {
+    addManual(s.name);
+  }, [addManual]);
+
+  const onInputChange = useCallback((val: string) => {
+    setInputValue(val);
+    setSelectedIdx(-1);
+    // Don't suggest when the user is typing comma-separated
+    const lastPart = val.split(",").pop()?.trim() ?? "";
+    if (lastPart.length >= 1) {
+      const results = searchFoods(lastPart, 7);
+      setSuggestions(results);
+      setShowSuggestions(results.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, []);
+
+  const onInputKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (showSuggestions && suggestions.length > 0) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIdx((i) => Math.min(i + 1, suggestions.length - 1)); return; }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setSelectedIdx((i) => Math.max(i - 1, -1)); return; }
+      if (e.key === "Escape")    { setShowSuggestions(false); setSelectedIdx(-1); return; }
+      if ((e.key === "Enter" || e.key === "Tab") && selectedIdx >= 0) {
+        e.preventDefault();
+        pickSuggestion(suggestions[selectedIdx]);
+        return;
+      }
+    }
+    if (e.key === "Enter") { e.preventDefault(); addManual(); }
+  }, [showSuggestions, suggestions, selectedIdx, pickSuggestion, addManual]);
 
   const removeManual = useCallback((name: string) => {
     setManualItems((prev) => prev.filter((n) => n !== name));
@@ -187,22 +242,42 @@ export default function QuickMealPage() {
 
       {/* INGREDIENT INPUT — primary interaction */}
       <div className="card p-4 mb-4">
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addManual(); } }}
-            placeholder="e.g. chicken thighs, garlic, lemon…"
-            className="input flex-1"
-            autoFocus
-          />
-          <button onClick={addManual} className="add-btn" disabled={!inputValue.trim()}>
+        <div className="flex gap-2" style={{ position: "relative" }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={onInputKeyDown}
+              onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+              placeholder="e.g. chicken thighs, garlic, lemon…"
+              className="input"
+              style={{ width: "100%" }}
+              autoFocus
+              autoComplete="off"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div ref={suggestionsRef} className="ac-dropdown">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={s.name}
+                    className={`ac-option${i === selectedIdx ? " ac-active" : ""}`}
+                    onMouseDown={(e) => { e.preventDefault(); pickSuggestion(s); }}
+                    onMouseEnter={() => setSelectedIdx(i)}
+                  >
+                    <span className="ac-name">{s.name}</span>
+                    <span className="ac-cat">{s.category}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button onClick={() => addManual()} className="add-btn" disabled={!inputValue.trim()}>
             Add
           </button>
         </div>
-        <p className="text-xs text-stone-400 mt-2">Separate multiple with commas, or press Enter after each</p>
+        <p className="text-xs text-stone-400 mt-2">Tap a suggestion, press Enter, or separate with commas</p>
 
         {manualItems.length > 0 && (
           <div className="chip-list">
@@ -471,6 +546,21 @@ export default function QuickMealPage() {
         .check-item:hover { background: #faf7f2; }
         .check-item input[type=checkbox] { width: 17px; height: 17px; accent-color: #4a6b4a; flex-shrink: 0; cursor: pointer; }
         .check-item.checked { background: #f0f5ef; }
+        .ac-dropdown {
+          position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+          background: #fff; border: 1px solid #ece6dc; border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1); z-index: 50; overflow: hidden;
+        }
+        .ac-option {
+          display: flex; justify-content: space-between; align-items: center;
+          width: 100%; padding: .6rem .85rem; border: none; background: none;
+          cursor: pointer; text-align: left; font-size: .85rem;
+          border-bottom: 1px solid #f5f0e8;
+        }
+        .ac-option:last-child { border-bottom: none; }
+        .ac-option:hover, .ac-active { background: #f0f5ef; }
+        .ac-name { color: #1f1b16; }
+        .ac-cat { color: #a8a095; font-size: .72rem; }
         .cat-label {
           font-size: .7rem;
           text-transform: uppercase;
