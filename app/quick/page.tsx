@@ -19,6 +19,7 @@ export default function QuickMealPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Manual ingredient entry
   const [inputValue, setInputValue] = useState("");
@@ -42,6 +43,8 @@ export default function QuickMealPage() {
 
   // State
   const [generating, setGenerating] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [conflictTitle, setConflictTitle] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState(false);
@@ -190,6 +193,55 @@ export default function QuickMealPage() {
     });
   }, []);
 
+  const handleImageFile = useCallback(async (file: File) => {
+    setScanError(null);
+    setScanning(true);
+    try {
+      // Resize to max 1024px on the longest side before uploading
+      const resized = await new Promise<{ data: string; type: string }>((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve({ data: canvas.toDataURL("image/jpeg", 0.85), type: "image/jpeg" });
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve({ data: "", type: "" }); };
+        img.src = url;
+      });
+
+      if (!resized.data) throw new Error("Could not read image");
+
+      const res = await fetch("/api/quick/scan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image: resized.data, mimeType: resized.type }),
+      });
+
+      const json = await res.json();
+      const found: string[] = json.ingredients ?? [];
+
+      if (found.length === 0) {
+        setScanError("No ingredients detected — try a clearer photo of your ingredients.");
+        return;
+      }
+
+      setManualItems((prev) => {
+        const existing = new Set(prev.map((s) => s.toLowerCase()));
+        return [...prev, ...found.filter((f) => !existing.has(f.toLowerCase()))];
+      });
+    } catch {
+      setScanError("Scan failed. Please try again.");
+    } finally {
+      setScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
+
   const totalSelected = manualItems.length + checkedFromKitchen.size;
 
   const doGenerate = useCallback(async (force = false) => {
@@ -266,6 +318,15 @@ export default function QuickMealPage() {
       <h1 className="font-display text-3xl mb-1">Quick meal</h1>
       <p className="text-sm text-stone-500 mb-6">What do you want to cook with tonight?</p>
 
+      {/* Hidden file input for image scan */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); }}
+      />
+
       {/* INGREDIENT INPUT — primary interaction */}
       <div className="card p-4 mb-4">
         <div className="flex gap-2" style={{ position: "relative" }}>
@@ -304,6 +365,20 @@ export default function QuickMealPage() {
           </button>
         </div>
         <p className="text-xs text-stone-400 mt-2">Tap a suggestion, press Enter, or separate with commas</p>
+
+        {/* Photo scan button */}
+        <button
+          className="scan-btn"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={scanning}
+        >
+          {scanning ? (
+            <><span className="scan-spinner" /> Scanning…</>
+          ) : (
+            <><span style={{ fontSize: "1rem" }}>📷</span> Scan a photo of your ingredients</>
+          )}
+        </button>
+        {scanError && <p className="text-xs text-red-500 mt-1.5">{scanError}</p>}
 
         {manualItems.length > 0 && (
           <div className="chip-list">
@@ -587,6 +662,33 @@ export default function QuickMealPage() {
         .ac-option:hover, .ac-active { background: #f0f5ef; }
         .ac-name { color: #1f1b16; }
         .ac-cat { color: #a8a095; font-size: .72rem; }
+        .scan-btn {
+          display: flex;
+          align-items: center;
+          gap: .5rem;
+          margin-top: .75rem;
+          width: 100%;
+          padding: .55rem .85rem;
+          background: #f5f0e8;
+          border: 1px dashed #c8bfb0;
+          border-radius: 10px;
+          font-size: .85rem;
+          color: #6b6258;
+          cursor: pointer;
+          text-align: left;
+        }
+        .scan-btn:hover:not(:disabled) { background: #ede8de; color: #1f1b16; }
+        .scan-btn:disabled { opacity: .6; cursor: default; }
+        .scan-spinner {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border: 2px solid #c8bfb0;
+          border-top-color: #4a6b4a;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          flex-shrink: 0;
+        }
         .cat-label {
           font-size: .7rem;
           text-transform: uppercase;
