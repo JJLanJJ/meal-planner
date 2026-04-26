@@ -4,6 +4,7 @@ import { getMeal, getPlan } from "@/lib/repo";
 import { planDisplayName, type Recipe } from "@/lib/types";
 import { MealActions } from "./MealActions";
 import { MethodSteps } from "./MethodSteps";
+import { IngredientsFloatButton } from "./IngredientsFloatButton";
 import { FoodImage } from "@/components/FoodImage";
 
 export const dynamic = "force-dynamic";
@@ -93,7 +94,7 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
           <MealActions mealId={meal.id} isCooked={isCooked} rating={meal.rating ?? null} recipe={recipe} />
         </div>
 
-        <div className="ga-ing">
+        <div className="ga-ing" id="ingredients-section">
           <h2 className="font-display text-xl mb-3">Ingredients</h2>
           <div className="card p-4 mb-3">
             {recipe.ingredients.map((ing, i) => (
@@ -131,6 +132,8 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
           <MethodSteps steps={recipe.steps} />
         </div>
       </div>
+
+      <IngredientsFloatButton ingredientsId="ingredients-section" />
 
       <style>{`
         .ing { display: flex; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid #ECE6DC; font-size: .9rem; }
