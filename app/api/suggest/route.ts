@@ -3,6 +3,7 @@ import { getClient } from "@/lib/claude";
 import { SYSTEM_PROMPT, SUGGEST_TOOL, buildUserPrompt } from "@/lib/prompts";
 import { SuggestionsResponseSchema, DeliveryItemSchema } from "@/lib/types";
 import { listInventory } from "@/lib/repo";
+import { searchRecipes, buildRecipeSearchQuery } from "@/lib/recipe-search";
 import { z } from "zod";
 
 const KitchenItemSchema = z.object({
@@ -49,6 +50,15 @@ export async function POST(req: Request) {
   // If planId is set, fetch current inventory (remaining quantities)
   const inventory = body.planId ? await listInventory(body.planId) : undefined;
 
+  // Search Tavily for real recipe references — one per meal night, in parallel.
+  // Failures are silently swallowed; Claude still generates without references.
+  const recipeSearch = await Promise.all(
+    body.meals.map((meal) => {
+      const query = buildRecipeSearchQuery(meal.cuisine, body.delivery);
+      return searchRecipes(query);
+    }),
+  );
+
   const client = getClient();
   const message = await client.messages.create({
     model: "claude-opus-4-6",
@@ -56,7 +66,7 @@ export async function POST(req: Request) {
     system: SYSTEM_PROMPT,
     tools: [SUGGEST_TOOL as any],
     tool_choice: { type: "tool", name: "suggest_recipes" } as any,
-    messages: [{ role: "user", content: buildUserPrompt({ ...body, inventory }) }],
+    messages: [{ role: "user", content: buildUserPrompt({ ...body, inventory, recipeSearch }) }],
   });
 
   const toolUse = message.content.find((b: any) => b.type === "tool_use") as any;
