@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { searchFoods, type FoodSuggestion } from "@/lib/food-suggestions";
+import { CookingLoader } from "@/components/CookingLoader";
 
 interface KitchenItem {
   id: number;
@@ -305,10 +306,8 @@ export default function QuickMealPage() {
 
   if (generating) {
     return (
-      <div className="flex flex-col items-center justify-center" style={{ minHeight: "60vh", gap: "1rem" }}>
-        <div className="spinner" />
-        <p className="font-display text-xl text-center">Finding a recipe for tonight…</p>
-        <p className="text-sm text-stone-500 text-center">This usually takes about 20 seconds</p>
+      <div className="flex flex-col items-center justify-center" style={{ minHeight: "60vh", gap: "1rem", maxWidth: 400, margin: "0 auto" }}>
+        <CookingLoader message="Finding a recipe for tonight… (10–20 sec)" />
       </div>
     );
   }
