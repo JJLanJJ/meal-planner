@@ -72,7 +72,7 @@ export async function POST(req: Request) {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 2000,
       tools: [PANTRY_VISION_TOOL],
       tool_choice: { type: "tool", name: "identify_pantry_items" },
