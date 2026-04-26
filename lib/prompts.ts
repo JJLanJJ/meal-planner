@@ -156,6 +156,60 @@ ${meals.map((_, i) => {
 Generate exactly ${meals.length} recipes, in order, one per night. Use the suggest_recipes tool.`;
 }
 
+export interface QuickMealInput {
+  selectedItems: { name: string; qty?: string | null; source: "delivery" | "pantry" }[];
+  kitchen: KitchenItem[];
+  cuisine: string | null;
+  max_minutes: number | null;
+  adults: number;
+  kids: number;
+  recentTitles: string[];
+  recipeSearch?: string | null;
+}
+
+export function buildQuickPrompt(input: QuickMealInput): string {
+  const { selectedItems, kitchen, cuisine, max_minutes, adults, kids, recentTitles, recipeSearch } = input;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const selectedLines = selectedItems
+    .map((i) => `- ${i.name}${i.qty ? ` (${i.qty})` : ""} [source: ${i.source}]`)
+    .join("\n") || "(none)";
+
+  const fridge = kitchen.filter((p) => p.location === "fridge");
+  const freezer = kitchen.filter((p) => p.location === "freezer");
+  const shelf = kitchen.filter((p) => p.location !== "fridge" && p.location !== "freezer");
+  const fmt = (items: KitchenItem[]) =>
+    items.map((p) => `- ${p.name}${p.qty ? " (" + p.qty + ")" : ""}`).join("\n") || "(none)";
+
+  const nightParts = [`1. ${today}`, cuisine ? `cuisine: ${cuisine}` : "cuisine: chef's choice"];
+  if (max_minutes) nightParts.push(`max ${max_minutes} min`);
+
+  return `ADULTS: ${adults}
+KIDS: ${kids}
+
+COOK TONIGHT — build the recipe around these selected ingredients (all must feature in the dish).
+Preserve the [source] tag for each item in your ingredients list:
+${selectedLines}
+
+KITCHEN — additional ingredients freely available (mark as source: "pantry"):
+FRIDGE (fresh/perishable):
+${fmt(fridge)}
+
+FREEZER (thaw in advance if needed):
+${fmt(freezer)}
+
+PANTRY (staples):
+${fmt(shelf)}
+
+NIGHT TO PLAN:
+${nightParts.join(" — ")}
+
+RECENT MEALS (do not repeat):
+${recentTitles.length ? recentTitles.map((t) => `- ${t}`).join("\n") : "(none)"}${recipeSearch ? `\n\nREFERENCE RECIPE — real recipe found online for inspiration. Draw on its techniques; adapt freely:\n${recipeSearch}` : ""}
+
+Generate exactly 1 recipe for tonight. Use the suggest_recipes tool.`;
+}
+
 // Tool schema for Claude — drives structured output.
 export const SUGGEST_TOOL = {
   name: "suggest_recipes",

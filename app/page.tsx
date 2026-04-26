@@ -167,6 +167,10 @@ export default async function HomePage() {
         <div className="ga-quick">
           <p className="num mb-3">Quick access</p>
           <div className="grid grid-cols-2 gap-3 quick-grid">
+            <Link href="/quick" className="nav-tile" style={{ borderColor: "#4a6b4a", background: "#f0f5ef" }}>
+              <p className="text-xs" style={{ color: "#4a6b4a" }}>Tonight</p>
+              <p className="font-display text-lg mt-1" style={{ color: "#2d4a2d" }}>⚡ Quick meal</p>
+            </Link>
             <Link href="/favourites" className="nav-tile">
               <p className="text-xs text-stone-500">Saved</p>
               <p className="font-display text-lg mt-1">Favourites · {favCount}</p>

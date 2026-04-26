@@ -14,7 +14,10 @@ const NAV: { section: string; items: { href: string; icon: string; label: string
   },
   {
     section: "New plan",
-    items: [{ href: "/plans/new", icon: "+", label: "Start a plan" }],
+    items: [
+      { href: "/quick", icon: "⚡", label: "Quick meal" },
+      { href: "/plans/new", icon: "+", label: "Start a plan" },
+    ],
   },
   {
     section: "Library",

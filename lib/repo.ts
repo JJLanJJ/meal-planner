@@ -507,6 +507,44 @@ export async function updateInventoryItem(
   await c.execute({ sql: `UPDATE inventory_items SET ${set} WHERE id = ?`, args: [...values, id] });
 }
 
+/** Returns the meal scheduled for today (exact date) in any active plan. */
+export async function getTodaysMeal(): Promise<
+  (MealRow & { plan_name: string | null }) | undefined
+> {
+  const c = await getClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const r = await c.execute({
+    sql: `SELECT m.*, p.name as plan_name
+          FROM meals m
+          JOIN plans p ON p.id = m.plan_id
+          WHERE p.status = 'active' AND m.scheduled_date = ?
+          ORDER BY m.id DESC LIMIT 1`,
+    args: [today],
+  });
+  return r.rows[0] ? (cast(r.rows[0] as unknown as Row) as any) : undefined;
+}
+
+/** Returns adults/kids from the most recent active plan, falling back to sensible defaults. */
+export async function getDefaultHousehold(): Promise<{ adults: number; kids: number }> {
+  const c = await getClient();
+  const r = await c.execute({
+    sql: "SELECT adults, kids FROM plans WHERE status = 'active' ORDER BY created_at DESC LIMIT 1",
+    args: [],
+  });
+  if (r.rows[0]) return { adults: Number(r.rows[0].adults), kids: Number(r.rows[0].kids) };
+  return { adults: 2, kids: 0 };
+}
+
+/** Returns the id of the most recent active plan, or null if none exists. */
+export async function getMostRecentActivePlanId(): Promise<number | null> {
+  const c = await getClient();
+  const r = await c.execute({
+    sql: "SELECT id FROM plans WHERE status = 'active' ORDER BY created_at DESC LIMIT 1",
+    args: [],
+  });
+  return r.rows[0] ? Number(r.rows[0].id) : null;
+}
+
 // ────────── History ──────────
 
 export async function recentTitles(days = 30): Promise<string[]> {
