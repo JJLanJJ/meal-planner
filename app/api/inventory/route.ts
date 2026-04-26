@@ -6,6 +6,7 @@ const PatchBody = z.object({
   id: z.number(),
   qty: z.string().nullable().optional(),
   name: z.string().optional(),
+  location: z.string().nullable().optional(),
 });
 
 export async function PATCH(req: Request) {

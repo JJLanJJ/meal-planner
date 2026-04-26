@@ -67,7 +67,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
   qty TEXT,
   source TEXT NOT NULL DEFAULT 'delivery',
   category TEXT NOT NULL DEFAULT 'other',
-  available_from TEXT  -- ISO YYYY-MM-DD; NULL = available immediately
+  available_from TEXT,  -- ISO YYYY-MM-DD; NULL = available immediately
+  location TEXT         -- 'fridge' | 'freezer' | 'pantry' | NULL (unassigned inbox)
 );
 CREATE INDEX IF NOT EXISTS idx_inventory_plan ON inventory_items(plan_id);
 `;

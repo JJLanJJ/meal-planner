@@ -14,6 +14,7 @@ type Item = { id: number; name: string; qty: string | null; category: string; lo
 type DeliveryItem = {
   id: number; name: string; qty: string | null; category: string;
   plan_name: string | null; plan_created_at: string; available_from: string | null;
+  location: string | null;
 };
 
 const LOCATIONS = [
@@ -250,6 +251,15 @@ export default function KitchenPage() {
     load();
   }
 
+  async function assignDelivery(id: number, location: string | null) {
+    await fetch("/api/inventory", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, location }),
+    });
+    load();
+  }
+
   async function removeDeliveryItem(id: number) {
     await fetch(`/api/inventory?id=${id}`, { method: "DELETE" });
     load();
@@ -357,126 +367,100 @@ export default function KitchenPage() {
         </div>
       </div>
 
-      {/* Deliveries — editable remaining inventory from active plans */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span style={{ fontSize: "1.1rem" }}>🚚</span>
-          <p className="num">Deliveries</p>
-          <span className="text-xs text-stone-400">· remaining from active plans</span>
-          <span className="ml-auto text-xs text-stone-400">{deliveryItems.length}</span>
-        </div>
-        {deliveryItems.length === 0 ? (
-          <div className="card p-4 text-center text-xs text-stone-400">
-            No active deliveries — start a plan to track what&rsquo;s arrived
-          </div>
-        ) : (
-          [...deliveryByPlan.values()].map((group) => {
-            // Group by category within this delivery plan
-            const catMap = new Map<string, DeliveryItem[]>();
-            for (const d of group.items) {
-              const cat = d.category ?? "Other";
-              if (!catMap.has(cat)) catMap.set(cat, []);
-              catMap.get(cat)!.push(d);
-            }
-            return (
-              <div key={group.planDate} className="mb-3">
-                <p className="text-xs text-stone-400 mb-1 px-1">{group.planName}</p>
-                <div>
-                  {[...catMap.entries()].map(([cat, catItems]) => (
-                    <div key={cat} className="mb-3">
-                      <p className="cat-label">{cat}</p>
-                      <div className="card">
-                        {catItems.map((d) => (
-                          <div key={d.id} className="row">
-                            <span className="flex-1 text-sm">{d.name}</span>
-                            {d.available_from && new Date(d.available_from) > new Date() && (
-                              <span className="text-xs text-stone-400 mr-1">arrives {fmtDate(d.available_from)}</span>
-                            )}
-                            {editingDeliveryQty === d.id ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  className="qty-input"
-                                  value={editDeliveryQtyVal}
-                                  onChange={(e) => setEditDeliveryQtyVal(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") saveDeliveryQty(d.id);
-                                    if (e.key === "Escape") setEditingDeliveryQty(null);
-                                  }}
-                                  placeholder="e.g. 500g"
-                                  autoFocus
-                                />
-                                <button onClick={() => saveDeliveryQty(d.id)} className="text-xs" style={{ color: "#4A6B4A" }}>✓</button>
-                                <button onClick={() => setEditingDeliveryQty(null)} className="text-xs text-stone-400">✕</button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => { setEditingDeliveryQty(d.id); setEditDeliveryQtyVal(d.qty ?? ""); }}
-                                className="qty-badge"
-                                title="Click to update quantity"
-                              >
-                                {d.qty ?? "∞"}
-                              </button>
-                            )}
-                            <button onClick={() => removeDeliveryItem(d.id)} className="del-btn">×</button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      {/* ── Deliveries inbox ── unassigned items waiting to be put away */}
+      {(() => {
+        const inbox = deliveryItems.filter((d) => !d.location);
+        return (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span style={{ fontSize: "1.1rem" }}>🚚</span>
+              <p className="num">Deliveries</p>
+              <span className="text-xs text-stone-400">· put items away below</span>
+              <span className="ml-auto text-xs text-stone-400">{inbox.length} unassigned</span>
+            </div>
+            {inbox.length === 0 && deliveryItems.length === 0 && (
+              <div className="card p-4 text-center text-xs text-stone-400">
+                No active deliveries — start a plan to track what&rsquo;s arrived
               </div>
-            );
-          })
-        )}
-      </div>
+            )}
+            {inbox.length === 0 && deliveryItems.length > 0 && (
+              <div className="card p-4 text-center text-xs text-stone-400">
+                All delivery items have been put away ✓
+              </div>
+            )}
+            {inbox.length > 0 && (
+              <div className="card">
+                {inbox.map((d) => (
+                  <div key={d.id} className="row" style={{ flexWrap: "wrap", gap: ".5rem" }}>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-sm" style={{ fontWeight: 500 }}>{d.name}</span>
+                      {d.qty && <span className="text-xs text-stone-400">{d.qty}</span>}
+                      {d.available_from && new Date(d.available_from) > new Date() && (
+                        <span className="text-xs text-amber-600">arrives {fmtDate(d.available_from)}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {LOCATIONS.map((loc) => (
+                        <button
+                          key={loc.key}
+                          onClick={() => assignDelivery(d.id, loc.key)}
+                          className="assign-btn"
+                          title={`Put in ${loc.label}`}
+                        >
+                          {loc.icon} {loc.label}
+                        </button>
+                      ))}
+                      <button onClick={() => removeDeliveryItem(d.id)} className="del-btn" title="Remove">×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
-      {/* Kitchen sections */}
+      {/* ── Kitchen sections — pantry items + assigned delivery items ── */}
       {LOCATIONS.map((loc) => {
         const locItems = byLocation(loc.key);
+        const locDelivery = deliveryItems.filter((d) => d.location === loc.key);
+        const isEmpty = locItems.length === 0 && locDelivery.length === 0;
         return (
           <div key={loc.key} className="mb-6">
             <div className="flex items-center gap-2 mb-2">
               <span style={{ fontSize: "1.1rem" }}>{loc.icon}</span>
               <p className="num">{loc.label}</p>
               <span className="text-xs text-stone-400">· {loc.hint}</span>
-              <span className="ml-auto text-xs text-stone-400">{locItems.length}</span>
+              <span className="ml-auto text-xs text-stone-400">{locItems.length + locDelivery.length}</span>
             </div>
-            {locItems.length === 0 ? (
+            {isEmpty ? (
               <div className="card p-4 text-center text-xs text-stone-400">
-                Nothing here yet — use the form above to add items
+                Nothing here yet
               </div>
             ) : (() => {
-              // Group by category within this location
-              const catMap = new Map<string, Item[]>();
-              for (const it of locItems) {
-                if (!catMap.has(it.category)) catMap.set(it.category, []);
-                catMap.get(it.category)!.push(it);
-              }
-              const renderRow = (it: Item) => (
-                <div key={it.id} className="row">
+              // Build combined category map: pantry items first, then delivery items
+              const catMap = new Map<string, { pantry: Item[]; delivery: DeliveryItem[] }>();
+              const ensureCat = (cat: string) => {
+                if (!catMap.has(cat)) catMap.set(cat, { pantry: [], delivery: [] });
+                return catMap.get(cat)!;
+              };
+              for (const it of locItems) ensureCat(it.category).pantry.push(it);
+              for (const d of locDelivery) ensureCat(d.category ?? "Other").delivery.push(d);
+
+              const renderPantryRow = (it: Item) => (
+                <div key={`p-${it.id}`} className="row">
                   <span className="flex-1 text-sm">{it.name}</span>
                   {editingQty === it.id ? (
                     <div className="flex items-center gap-1">
-                      <input
-                        className="qty-input"
-                        value={editQtyVal}
+                      <input className="qty-input" value={editQtyVal}
                         onChange={(e) => setEditQtyVal(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") saveQty(it.id);
-                          if (e.key === "Escape") setEditingQty(null);
-                        }}
-                        placeholder="e.g. 500g"
-                        autoFocus
-                      />
+                        onKeyDown={(e) => { if (e.key === "Enter") saveQty(it.id); if (e.key === "Escape") setEditingQty(null); }}
+                        placeholder="e.g. 500g" autoFocus />
                       <button onClick={() => saveQty(it.id)} className="text-xs" style={{ color: "#4A6B4A" }}>✓</button>
                       <button onClick={() => setEditingQty(null)} className="text-xs text-stone-400">✕</button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => { setEditingQty(it.id); setEditQtyVal(it.qty ?? ""); }}
-                      className="qty-badge"
-                      title="Click to set quantity"
-                    >
+                    <button onClick={() => { setEditingQty(it.id); setEditQtyVal(it.qty ?? ""); }} className="qty-badge" title="Click to set quantity">
                       {it.qty ?? "∞"}
                     </button>
                   )}
@@ -484,21 +468,54 @@ export default function KitchenPage() {
                     <button className="move-btn" title="Move to…">⇄</button>
                     <div className="move-menu">
                       {LOCATIONS.filter((l) => l.key !== loc.key).map((l) => (
-                        <button key={l.key} onClick={() => moveItem(it.id, l.key)} className="move-option">
-                          {l.icon} {l.label}
-                        </button>
+                        <button key={l.key} onClick={() => moveItem(it.id, l.key)} className="move-option">{l.icon} {l.label}</button>
                       ))}
                     </div>
                   </div>
                   <button onClick={() => remove(it.id)} className="del-btn">×</button>
                 </div>
               );
+
+              const renderDeliveryRow = (d: DeliveryItem) => (
+                <div key={`d-${d.id}`} className="row">
+                  <span className="flex-1 text-sm">{d.name}</span>
+                  <span className="delivery-badge">📦 Delivery</span>
+                  {editingDeliveryQty === d.id ? (
+                    <div className="flex items-center gap-1">
+                      <input className="qty-input" value={editDeliveryQtyVal}
+                        onChange={(e) => setEditDeliveryQtyVal(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveDeliveryQty(d.id); if (e.key === "Escape") setEditingDeliveryQty(null); }}
+                        placeholder="e.g. 500g" autoFocus />
+                      <button onClick={() => saveDeliveryQty(d.id)} className="text-xs" style={{ color: "#4A6B4A" }}>✓</button>
+                      <button onClick={() => setEditingDeliveryQty(null)} className="text-xs text-stone-400">✕</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => { setEditingDeliveryQty(d.id); setEditDeliveryQtyVal(d.qty ?? ""); }} className="qty-badge" title="Click to update quantity">
+                      {d.qty ?? "∞"}
+                    </button>
+                  )}
+                  <div className="relative group">
+                    <button className="move-btn" title="Move to…">⇄</button>
+                    <div className="move-menu">
+                      {LOCATIONS.filter((l) => l.key !== loc.key).map((l) => (
+                        <button key={l.key} onClick={() => assignDelivery(d.id, l.key)} className="move-option">{l.icon} {l.label}</button>
+                      ))}
+                      <button onClick={() => assignDelivery(d.id, null)} className="move-option">🚚 Back to inbox</button>
+                    </div>
+                  </div>
+                  <button onClick={() => removeDeliveryItem(d.id)} className="del-btn">×</button>
+                </div>
+              );
+
               return (
                 <div>
-                  {[...catMap.entries()].map(([cat, catItems]) => (
+                  {[...catMap.entries()].map(([cat, { pantry: pItems, delivery: dItems }]) => (
                     <div key={cat} className="mb-3">
                       <p className="cat-label">{cat}</p>
-                      <div className="card">{catItems.map(renderRow)}</div>
+                      <div className="card">
+                        {pItems.map(renderPantryRow)}
+                        {dItems.map(renderDeliveryRow)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -621,6 +638,17 @@ export default function KitchenPage() {
         .ac-option:hover, .ac-active { background: #F5F0E8; }
         .ac-name { color: #3A3328; }
         .ac-cat { color: #A8A095; font-size: .7rem; }
+        .assign-btn {
+          font-size: .72rem; padding: .25rem .55rem; border-radius: 7px;
+          border: 1px solid #ECE6DC; background: #FAF7F2; color: #6b6258;
+          cursor: pointer; white-space: nowrap;
+        }
+        .assign-btn:hover { background: #EAF0E8; border-color: #4A6B4A; color: #4A6B4A; }
+        .delivery-badge {
+          font-size: .65rem; color: #7A5C2E; background: #FDF3E3;
+          border: 1px solid #F0DDB8; border-radius: 6px;
+          padding: .15rem .45rem; white-space: nowrap; flex-shrink: 0;
+        }
       `}</style>
     </>
   );

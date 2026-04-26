@@ -17,6 +17,7 @@ async function init(): Promise<Client> {
   // Idempotent migrations for columns added after initial table creation.
   // CREATE TABLE IF NOT EXISTS won't add new columns to an existing table.
   await ensureColumn(client, "inventory_items", "available_from", "TEXT");
+  await ensureColumn(client, "inventory_items", "location", "TEXT");
   await ensureColumn(client, "pantry_items", "qty", "TEXT");
   await ensureColumn(client, "pantry_items", "location", "TEXT NOT NULL DEFAULT 'pantry'");
   await ensureColumn(client, "food_images", "mime_type", "TEXT");
