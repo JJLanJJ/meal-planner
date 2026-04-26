@@ -36,6 +36,11 @@ export default async function HistoryPage() {
               <h2 className="font-display text-base leading-tight mb-2">
                 {r?.title ?? "Untitled"}
               </h2>
+              {m.rating && (
+                <p className="text-sm mb-1" style={{ color: "#D9803A", letterSpacing: ".05em" }}>
+                  {"★".repeat(m.rating)}{"☆".repeat(5 - m.rating)}
+                </p>
+              )}
               {r && (
                 <div className="flex flex-wrap gap-1.5">
                   <span className="pill">{r.cuisine}</span>

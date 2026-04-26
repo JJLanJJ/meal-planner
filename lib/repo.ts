@@ -123,6 +123,11 @@ export async function markMealCooked(id: number): Promise<void> {
   });
 }
 
+export async function updateMealRating(id: number, rating: number | null): Promise<void> {
+  const c = await getClient();
+  await c.execute({ sql: "UPDATE meals SET rating = ? WHERE id = ?", args: [rating, id] });
+}
+
 export async function unmarkMealCooked(id: number): Promise<void> {
   const c = await getClient();
   await c.execute({
@@ -320,7 +325,7 @@ export async function listHistory(opts?: {
   minRating?: number;
   cuisine?: string;
   search?: string;
-}): Promise<(MealRow & { plan_name: string | null; rating: number | null })[]> {
+}): Promise<(MealRow & { plan_name: string | null })[]> {
   const c = await getClient();
   const where: string[] = ["m.status = 'cooked'"];
   const args: any[] = [];
@@ -333,7 +338,7 @@ export async function listHistory(opts?: {
     args.push(`%${opts.search}%`);
   }
   const r = await c.execute({
-    sql: `SELECT m.*, p.name as plan_name, p.rating
+    sql: `SELECT m.*, p.name as plan_name
           FROM meals m
           JOIN plans p ON p.id = m.plan_id
           WHERE ${where.join(" AND ")}

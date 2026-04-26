@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS meals (
   cuisine_pref TEXT,
   recipe_json TEXT,
   status TEXT NOT NULL DEFAULT 'planned',
-  cooked_at TEXT
+  cooked_at TEXT,
+  rating INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_meals_plan ON meals(plan_id);
 CREATE INDEX IF NOT EXISTS idx_meals_status ON meals(status);

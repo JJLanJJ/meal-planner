@@ -78,6 +78,7 @@ export interface MealRow {
   recipe_json: string | null;
   status: "planned" | "cooked" | "skipped";
   cooked_at: string | null;
+  rating: number | null;
 }
 
 export interface PantryItemRow {

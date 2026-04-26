@@ -89,7 +89,7 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
           )}
-          <MealActions mealId={meal.id} isCooked={isCooked} recipe={recipe} />
+          <MealActions mealId={meal.id} isCooked={isCooked} rating={meal.rating ?? null} recipe={recipe} />
         </div>
 
         <div className="ga-ing">

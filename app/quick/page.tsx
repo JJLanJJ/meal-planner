@@ -26,6 +26,7 @@ export default function QuickMealPage() {
   const [suggestions, setSuggestions] = useState<FoodSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [ownedNames, setOwnedNames] = useState<string[]>([]); // kitchen + delivery names for AC
 
   // Kitchen items from API (secondary, opt-in)
   const [kitchenItems, setKitchenItems] = useState<KitchenItem[]>([]);
@@ -59,13 +60,25 @@ export default function QuickMealPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Load household defaults + today's meal check on mount
+  // Load household defaults, today's meal status, and kitchen names for autocomplete
   useEffect(() => {
     fetch("/api/quick").then((r) => r.json()).then((d) => {
       if (d.meal) setConflictTitle(d.meal.title);
       setAdults(d.adults ?? 2);
       setKids(d.kids ?? 0);
     }).catch(() => {});
+
+    // Silently pre-fetch kitchen + delivery item names for autocomplete enrichment
+    Promise.all([
+      fetch("/api/pantry").then((r) => r.json()).catch(() => ({ items: [] })),
+      fetch("/api/pantry?section=deliveries").then((r) => r.json()).catch(() => ({ items: [] })),
+    ]).then(([pantry, delivery]) => {
+      const names = [
+        ...(pantry.items ?? []).map((p: any) => p.name as string),
+        ...(delivery.items ?? []).map((d: any) => d.name as string),
+      ];
+      setOwnedNames(names);
+    });
   }, []);
 
   // Load kitchen items only when the user opens that section
@@ -126,17 +139,30 @@ export default function QuickMealPage() {
   const onInputChange = useCallback((val: string) => {
     setInputValue(val);
     setSelectedIdx(-1);
-    // Don't suggest when the user is typing comma-separated
     const lastPart = val.split(",").pop()?.trim() ?? "";
     if (lastPart.length >= 1) {
-      const results = searchFoods(lastPart, 7);
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0);
+      const q = lastPart.toLowerCase();
+      const alreadyAdded = new Set(manualItems.map((s) => s.toLowerCase()));
+
+      // Your kitchen/delivery items that match
+      const ownedMatches: FoodSuggestion[] = ownedNames
+        .filter((n) => n.toLowerCase().includes(q) && !alreadyAdded.has(n.toLowerCase()))
+        .slice(0, 4)
+        .map((n) => ({ name: n, category: "Your kitchen" }));
+
+      // Food library matches (dedup against owned)
+      const ownedSet = new Set(ownedMatches.map((s) => s.name.toLowerCase()));
+      const libraryMatches = searchFoods(lastPart, 6)
+        .filter((s) => !ownedSet.has(s.name.toLowerCase()) && !alreadyAdded.has(s.name.toLowerCase()));
+
+      const merged = [...ownedMatches, ...libraryMatches].slice(0, 8);
+      setSuggestions(merged);
+      setShowSuggestions(merged.length > 0);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, []);
+  }, [ownedNames, manualItems]);
 
   const onInputKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (showSuggestions && suggestions.length > 0) {
