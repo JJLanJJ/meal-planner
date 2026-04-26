@@ -41,15 +41,15 @@ export default function QuickMealPage() {
           fetch("/api/quick"),
         ]);
 
-        const pantryData = await pantryRes.json();
-        const deliveryData = await deliveryRes.json();
+        const { items: pantryItems } = await pantryRes.json();
+        const { items: deliveryItems } = await deliveryRes.json();
         const hhData = await hh.json();
 
         if (hhData.meal) setConflictTitle(hhData.meal.title);
         setAdults(hhData.adults ?? 2);
         setKids(hhData.kids ?? 0);
 
-        const kitchen: KitchenItem[] = (pantryData as any[]).map((p: any) => ({
+        const kitchen: KitchenItem[] = (pantryItems ?? []).map((p: any) => ({
           id: p.id,
           name: p.name,
           qty: p.qty ?? null,
@@ -58,7 +58,7 @@ export default function QuickMealPage() {
           source: "pantry" as const,
         }));
 
-        const delivery: KitchenItem[] = (deliveryData as any[]).map((d: any, i: number) => ({
+        const delivery: KitchenItem[] = (deliveryItems ?? []).map((d: any, i: number) => ({
           id: -1 - i,
           name: d.name,
           qty: d.qty ?? null,
