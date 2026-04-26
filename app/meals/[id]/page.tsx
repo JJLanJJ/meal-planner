@@ -65,6 +65,26 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
             <span className="pill">{recipe.difficulty}</span>
             {recipe.nutrition && <span className="pill">🔥 {Math.round(recipe.nutrition.calories)} kcal</span>}
           </div>
+          {recipe.references && recipe.references.length > 0 && (
+            <div className="mb-4" style={{ borderLeft: "2px solid #ece6dc", paddingLeft: "0.75rem" }}>
+              <p className="text-[10px] uppercase tracking-wider text-stone-400 mb-1.5">Inspired by</p>
+              <div className="flex flex-col gap-1">
+                {recipe.references.map((ref) => (
+                  <a
+                    key={ref.url}
+                    href={ref.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-stone-500 hover:text-stone-800 truncate"
+                    style={{ textDecoration: "none" }}
+                  >
+                    {ref.title}
+                    <span className="text-stone-400 ml-1">· {ref.domain}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           {recipe.nutrition && (
             <div className="card p-4 mb-4">
               <p className="text-[10px] uppercase tracking-wider text-stone-500 mb-2">Per adult serving</p>

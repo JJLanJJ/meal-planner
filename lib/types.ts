@@ -40,6 +40,12 @@ export const RecipeSchema = z.object({
   // field was added still parse cleanly from recipe_json.
   nutrition: NutritionSchema.optional(),
   health_notes: z.string().optional(),
+  // Reference recipes from Tavily used as inspiration — stored for display only.
+  references: z.array(z.object({
+    title: z.string(),
+    url: z.string(),
+    domain: z.string(),
+  })).optional(),
 });
 export type Recipe = z.infer<typeof RecipeSchema>;
 

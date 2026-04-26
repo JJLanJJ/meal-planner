@@ -52,12 +52,13 @@ export async function POST(req: Request) {
 
   // Search Tavily for real recipe references — one per meal night, in parallel.
   // Failures are silently swallowed; Claude still generates without references.
-  const recipeSearch = await Promise.all(
+  const searchResults = await Promise.all(
     body.meals.map((meal) => {
       const query = buildRecipeSearchQuery(meal.cuisine, body.delivery);
-      return searchRecipes(query);
+      return searchRecipes(query).catch(() => null);
     }),
   );
+  const recipeSearch = searchResults.map((r) => r?.snippet ?? null);
 
   const client = getClient();
   const message = await client.messages.create({

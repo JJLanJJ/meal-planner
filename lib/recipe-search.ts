@@ -1,9 +1,19 @@
+export interface RecipeRef {
+  title: string;
+  url: string;
+  domain: string;
+}
+
+export interface RecipeSearchResult {
+  snippet: string;   // passed to Claude as reference context
+  refs: RecipeRef[]; // stored with the recipe for display
+}
+
 /**
  * Searches Tavily for real recipe content to ground Claude's generation.
- * Returns a short snippet (title + method notes) from the top results,
- * or null if no API key is set or the search fails.
+ * Returns a snippet for Claude and structured refs for display, or null on failure.
  */
-export async function searchRecipes(query: string): Promise<string | null> {
+export async function searchRecipes(query: string): Promise<RecipeSearchResult | null> {
   const key = process.env.TAVILY_API_KEY;
   if (!key) return null;
 
@@ -18,7 +28,6 @@ export async function searchRecipes(query: string): Promise<string | null> {
         max_results: 3,
         include_answer: false,
         include_raw_content: false,
-        // Focus on recipe-heavy domains
         include_domains: [
           "seriouseats.com",
           "taste.com.au",
@@ -37,15 +46,21 @@ export async function searchRecipes(query: string): Promise<string | null> {
     if (!res.ok) return null;
 
     const data = await res.json();
-    const results: { title: string; content: string; url: string }[] =
-      data.results ?? [];
-
+    const results: { title: string; content: string; url: string }[] = data.results ?? [];
     if (results.length === 0) return null;
 
-    return results
-      .slice(0, 3)
+    const top = results.slice(0, 3);
+    const snippet = top
       .map((r) => `— ${r.title} (${new URL(r.url).hostname})\n${r.content.slice(0, 400)}`)
       .join("\n\n");
+
+    const refs: RecipeRef[] = top.map((r) => ({
+      title: r.title,
+      url: r.url,
+      domain: new URL(r.url).hostname.replace(/^www\./, ""),
+    }));
+
+    return { snippet, refs };
   } catch {
     return null;
   }
@@ -56,12 +71,9 @@ export function buildRecipeSearchQuery(
   cuisine: string | null,
   deliveryItems: { name: string; category: string }[],
 ): string {
-  // Pick the first meat/protein, fall back to first item
   const protein =
     deliveryItems.find((d) => d.category === "meat")?.name ??
     deliveryItems[0]?.name ??
     "";
-
-  const parts = [protein, cuisine, "recipe dinner"].filter(Boolean);
-  return parts.join(" ");
+  return [protein, cuisine, "recipe dinner"].filter(Boolean).join(" ");
 }

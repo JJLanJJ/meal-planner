@@ -6,6 +6,7 @@ import {
   getTodaysMeal,
   getDefaultHousehold,
   getMostRecentActivePlanId,
+  listPantry,
   createPlan,
   createMeal,
   setMealRecipe,
@@ -76,10 +77,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ conflict: true, existingTitle: title }, { status: 409 });
   }
 
-  // Tavily search for one recipe reference
-  const recipeSearch = await searchRecipes(
-    [body.cuisine, body.selectedItems[0]?.name, "recipe dinner"].filter(Boolean).join(" "),
-  ).catch(() => null);
+  // Fetch kitchen items server-side — don't trust the client to send them
+  const pantryItems = await listPantry();
+  const kitchen = pantryItems.map((p) => ({
+    name: p.name,
+    qty: p.qty ?? undefined,
+    location: p.location,
+  }));
+
+  // Build a richer Tavily query using the top ingredients + cuisine
+  const topIngredients = body.selectedItems.slice(0, 3).map((i) => i.name).join(" ");
+  const searchQuery = [topIngredients, body.cuisine, "recipe dinner"].filter(Boolean).join(" ");
+  const searchResult = await searchRecipes(searchQuery).catch(() => null);
 
   const titles = await recentTitles(30);
 
@@ -94,13 +103,13 @@ export async function POST(req: Request) {
       role: "user",
       content: buildQuickPrompt({
         selectedItems: body.selectedItems,
-        kitchen: body.kitchen,
+        kitchen,
         cuisine: body.cuisine,
         max_minutes: body.max_minutes,
         adults: body.adults,
         kids: body.kids,
         recentTitles: titles,
-        recipeSearch,
+        recipeSearch: searchResult?.snippet ?? null,
       }),
     }],
   });
@@ -123,7 +132,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const recipe = parsed.data;
+  const recipe = {
+    ...parsed.data,
+    ...(searchResult?.refs?.length ? { references: searchResult.refs } : {}),
+  };
 
   // Save the meal — overwrite or create
   let mealId: number;
