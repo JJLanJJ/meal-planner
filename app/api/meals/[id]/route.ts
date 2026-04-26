@@ -7,8 +7,10 @@ import {
   unmarkMealCooked,
   updateMealRating,
   deductInventory,
+  deductPantryOnCook,
+  refundPantryOnUncook,
 } from "@/lib/repo";
-import { RecipeSchema } from "@/lib/types";
+import { RecipeSchema, type Recipe } from "@/lib/types";
 
 const Patch = z.object({
   status: z.enum(["planned", "cooked"]).optional(),
@@ -35,8 +37,20 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const meal = await getMeal(mealId);
     if (meal) await deductInventory(meal.plan_id, parsed.data.recipe);
   }
-  if (parsed.data.status === "cooked") await markMealCooked(mealId);
-  if (parsed.data.status === "planned") await unmarkMealCooked(mealId);
+  if (parsed.data.status === "cooked") {
+    const meal = await getMeal(mealId);
+    if (meal?.recipe_json) {
+      try { await deductPantryOnCook(JSON.parse(meal.recipe_json) as Recipe); } catch {}
+    }
+    await markMealCooked(mealId);
+  }
+  if (parsed.data.status === "planned") {
+    const meal = await getMeal(mealId);
+    if (meal?.recipe_json) {
+      try { await refundPantryOnUncook(JSON.parse(meal.recipe_json) as Recipe); } catch {}
+    }
+    await unmarkMealCooked(mealId);
+  }
   if (parsed.data.rating !== undefined) await updateMealRating(mealId, parsed.data.rating);
   return NextResponse.json({ ok: true });
 }

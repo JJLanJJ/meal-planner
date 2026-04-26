@@ -139,6 +139,69 @@ export async function markMealCooked(id: number): Promise<void> {
   });
 }
 
+/** Deduct pantry-source ingredients from pantry_items when a meal is marked cooked. */
+export async function deductPantryOnCook(recipe: Recipe): Promise<void> {
+  const c = await getClient();
+  const pantry = await listPantry();
+  const stmts: { sql: string; args: any[] }[] = [];
+
+  for (const ing of recipe.ingredients) {
+    if (ing.source !== "pantry") continue;
+
+    const match = pantry.find((it) => it.name.toLowerCase() === ing.name.toLowerCase());
+    if (!match) continue;
+
+    const usedQty = parseQty(ing.qty);
+    const itemQty = match.qty ? parseQty(match.qty) : null;
+
+    if (!usedQty || !itemQty || itemQty.unit !== usedQty.unit) {
+      // No parseable quantities or unit mismatch — remove the item entirely
+      stmts.push({ sql: "DELETE FROM pantry_items WHERE id = ?", args: [match.id] });
+      continue;
+    }
+
+    const remaining = itemQty.value - usedQty.value;
+    if (remaining <= 0) {
+      stmts.push({ sql: "DELETE FROM pantry_items WHERE id = ?", args: [match.id] });
+    } else {
+      stmts.push({
+        sql: "UPDATE pantry_items SET qty = ? WHERE id = ?",
+        args: [formatQty(remaining, itemQty.unit), match.id],
+      });
+    }
+  }
+
+  if (stmts.length > 0) await c.batch(stmts, "write");
+}
+
+/** Refund pantry-source ingredients back to pantry_items when a meal is un-marked cooked. */
+export async function refundPantryOnUncook(recipe: Recipe): Promise<void> {
+  const c = await getClient();
+  const pantry = await listPantry();
+  const stmts: { sql: string; args: any[] }[] = [];
+
+  for (const ing of recipe.ingredients) {
+    if (ing.source !== "pantry") continue;
+
+    const usedQty = parseQty(ing.qty);
+    if (!usedQty) continue;
+
+    const match = pantry.find((it) => it.name.toLowerCase() === ing.name.toLowerCase());
+    if (match?.qty) {
+      const itemQty = parseQty(match.qty);
+      if (itemQty && itemQty.unit === usedQty.unit) {
+        stmts.push({
+          sql: "UPDATE pantry_items SET qty = ? WHERE id = ?",
+          args: [formatQty(itemQty.value + usedQty.value, itemQty.unit), match.id],
+        });
+      }
+    }
+    // If the item was fully deleted, we can't reliably restore it (category/location unknown)
+  }
+
+  if (stmts.length > 0) await c.batch(stmts, "write");
+}
+
 export async function updateMealRating(id: number, rating: number | null): Promise<void> {
   const c = await getClient();
   await c.execute({ sql: "UPDATE meals SET rating = ? WHERE id = ?", args: [rating, id] });
