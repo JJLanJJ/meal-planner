@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface KitchenItem {
@@ -16,84 +16,115 @@ type TimeLimit = 30 | 45 | 60 | null;
 
 export default function QuickMealPage() {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const [items, setItems] = useState<KitchenItem[]>([]);
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+  // Manual ingredient entry
+  const [inputValue, setInputValue] = useState("");
+  const [manualItems, setManualItems] = useState<string[]>([]);
+
+  // Kitchen items from API (secondary, opt-in)
+  const [kitchenItems, setKitchenItems] = useState<KitchenItem[]>([]);
+  const [checkedFromKitchen, setCheckedFromKitchen] = useState<Set<number>>(new Set());
+  const [showKitchen, setShowKitchen] = useState(false);
+  const [loadingKitchen, setLoadingKitchen] = useState(false);
+
+  // Preferences
   const [cuisine, setCuisine] = useState("");
   const [timeLimit, setTimeLimit] = useState<TimeLimit>(null);
   const [adults, setAdults] = useState(2);
   const [kids, setKids] = useState(0);
-  const [loadingItems, setLoadingItems] = useState(true);
+
+  // State
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Conflict modal
   const [conflictTitle, setConflictTitle] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState(false);
 
+  // Load household defaults + today's meal check on mount
   useEffect(() => {
-    async function load() {
-      setLoadingItems(true);
-      try {
-        const [pantryRes, deliveryRes, hh] = await Promise.all([
-          fetch("/api/pantry"),
-          fetch("/api/pantry?section=deliveries"),
-          fetch("/api/quick"),
-        ]);
-
-        const { items: pantryItems } = await pantryRes.json();
-        const { items: deliveryItems } = await deliveryRes.json();
-        const hhData = await hh.json();
-
-        if (hhData.meal) setConflictTitle(hhData.meal.title);
-        setAdults(hhData.adults ?? 2);
-        setKids(hhData.kids ?? 0);
-
-        const kitchen: KitchenItem[] = (pantryItems ?? []).map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          qty: p.qty ?? null,
-          category: p.category ?? "Other",
-          location: p.location ?? "pantry",
-          source: "pantry" as const,
-        }));
-
-        const delivery: KitchenItem[] = (deliveryItems ?? []).map((d: any, i: number) => ({
-          id: -1 - i,
-          name: d.name,
-          qty: d.qty ?? null,
-          category: d.category ?? "Other",
-          location: "delivery",
-          source: "delivery" as const,
-        }));
-
-        setItems([...delivery, ...kitchen]);
-      } finally {
-        setLoadingItems(false);
-      }
-    }
-    load();
+    fetch("/api/quick").then((r) => r.json()).then((d) => {
+      if (d.meal) setConflictTitle(d.meal.title);
+      setAdults(d.adults ?? 2);
+      setKids(d.kids ?? 0);
+    }).catch(() => {});
   }, []);
 
-  const toggle = useCallback((id: number) => {
-    setChecked((prev) => {
+  // Load kitchen items only when the user opens that section
+  const handleShowKitchen = useCallback(async () => {
+    setShowKitchen(true);
+    if (kitchenItems.length > 0) return;
+    setLoadingKitchen(true);
+    try {
+      const [pantryRes, deliveryRes] = await Promise.all([
+        fetch("/api/pantry"),
+        fetch("/api/pantry?section=deliveries"),
+      ]);
+      const { items: pantryData } = await pantryRes.json();
+      const { items: deliveryData } = await deliveryRes.json();
+
+      const kitchen: KitchenItem[] = (pantryData ?? []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        qty: p.qty ?? null,
+        category: p.category ?? "Other",
+        location: p.location ?? "pantry",
+        source: "pantry" as const,
+      }));
+      const delivery: KitchenItem[] = (deliveryData ?? []).map((d: any, i: number) => ({
+        id: -1 - i,
+        name: d.name,
+        qty: d.qty ?? null,
+        category: d.category ?? "Other",
+        location: "delivery",
+        source: "delivery" as const,
+      }));
+      setKitchenItems([...delivery, ...kitchen]);
+    } finally {
+      setLoadingKitchen(false);
+    }
+  }, [kitchenItems.length]);
+
+  const addManual = useCallback(() => {
+    const val = inputValue.trim();
+    if (!val) return;
+    // support comma-separated e.g. "chicken, garlic, lemon"
+    const parts = val.split(",").map((s) => s.trim()).filter(Boolean);
+    setManualItems((prev) => {
+      const existing = new Set(prev.map((s) => s.toLowerCase()));
+      return [...prev, ...parts.filter((p) => !existing.has(p.toLowerCase()))];
+    });
+    setInputValue("");
+    inputRef.current?.focus();
+  }, [inputValue]);
+
+  const removeManual = useCallback((name: string) => {
+    setManualItems((prev) => prev.filter((n) => n !== name));
+  }, []);
+
+  const toggleKitchen = useCallback((id: number) => {
+    setCheckedFromKitchen((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   }, []);
 
+  const totalSelected = manualItems.length + checkedFromKitchen.size;
+
   const doGenerate = useCallback(async (force = false) => {
     setError(null);
     setGenerating(true);
     setShowConflict(false);
 
-    const selectedItems = items
-      .filter((i) => checked.has(i.id))
-      .map((i) => ({ name: i.name, qty: i.qty, source: i.source }));
+    const selectedItems = [
+      ...manualItems.map((name) => ({ name, source: "pantry" as const })),
+      ...kitchenItems
+        .filter((i) => checkedFromKitchen.has(i.id))
+        .map((i) => ({ name: i.name, qty: i.qty, source: i.source })),
+    ];
 
-    const kitchen = items
-      .filter((i) => !checked.has(i.id) && i.source === "pantry")
+    const kitchen = kitchenItems
+      .filter((i) => !checkedFromKitchen.has(i.id))
       .map((i) => ({ name: i.name, qty: i.qty, location: i.location }));
 
     try {
@@ -132,15 +163,12 @@ export default function QuickMealPage() {
       setError("Network error. Please try again.");
       setGenerating(false);
     }
-  }, [items, checked, cuisine, timeLimit, adults, kids, router]);
+  }, [manualItems, kitchenItems, checkedFromKitchen, cuisine, timeLimit, adults, kids, router]);
 
-  // Group items for display
-  const deliveryItems = items.filter((i) => i.source === "delivery");
-  const fridgeItems = items.filter((i) => i.source === "pantry" && i.location === "fridge");
-  const freezerItems = items.filter((i) => i.source === "pantry" && i.location === "freezer");
-  const pantryItems = items.filter((i) => i.source === "pantry" && i.location !== "fridge" && i.location !== "freezer");
-
-  const checkedCount = checked.size;
+  const deliveryItems = kitchenItems.filter((i) => i.source === "delivery");
+  const fridgeItems = kitchenItems.filter((i) => i.source === "pantry" && i.location === "fridge");
+  const freezerItems = kitchenItems.filter((i) => i.source === "pantry" && i.location === "freezer");
+  const shelfItems = kitchenItems.filter((i) => i.source === "pantry" && i.location !== "fridge" && i.location !== "freezer");
 
   if (generating) {
     return (
@@ -155,112 +183,149 @@ export default function QuickMealPage() {
   return (
     <>
       <h1 className="font-display text-3xl mb-1">Quick meal</h1>
-      <p className="text-sm text-stone-500 mb-6">Pick what you want to cook with tonight.</p>
+      <p className="text-sm text-stone-500 mb-6">What do you want to cook with tonight?</p>
 
-      {loadingItems ? (
-        <p className="text-sm text-stone-500">Loading your kitchen…</p>
-      ) : (
-        <>
-          <ItemSection
-            title="From your deliveries"
-            icon="📦"
-            items={deliveryItems}
-            checked={checked}
-            onToggle={toggle}
+      {/* INGREDIENT INPUT — primary interaction */}
+      <div className="card p-4 mb-4">
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addManual(); } }}
+            placeholder="e.g. chicken thighs, garlic, lemon…"
+            className="input flex-1"
+            autoFocus
           />
-          <ItemSection
-            title="Fridge"
-            icon="🧊"
-            items={fridgeItems}
-            checked={checked}
-            onToggle={toggle}
-          />
-          <ItemSection
-            title="Freezer"
-            icon="❄️"
-            items={freezerItems}
-            checked={checked}
-            onToggle={toggle}
-          />
-          <ItemSection
-            title="Pantry"
-            icon="🥫"
-            items={pantryItems}
-            checked={checked}
-            onToggle={toggle}
-          />
-
-          {/* Preferences */}
-          <div className="card p-5 mb-5">
-            <p className="font-display text-base mb-4">Preferences</p>
-
-            <label className="block mb-4">
-              <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Cuisine</span>
-              <input
-                type="text"
-                value={cuisine}
-                onChange={(e) => setCuisine(e.target.value)}
-                placeholder="e.g. Italian, Thai, anything goes…"
-                className="input w-full"
-              />
-            </label>
-
-            <div className="mb-4">
-              <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Time available</span>
-              <div className="flex gap-2 flex-wrap">
-                {([30, 45, 60, null] as TimeLimit[]).map((t) => (
-                  <button
-                    key={String(t)}
-                    onClick={() => setTimeLimit(t)}
-                    className={`time-pill${timeLimit === t ? " active" : ""}`}
-                  >
-                    {t === null ? "No limit" : `${t} min`}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <label className="flex-1">
-                <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Adults</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={adults}
-                  onChange={(e) => setAdults(Math.max(1, Number(e.target.value)))}
-                  className="input w-full"
-                />
-              </label>
-              <label className="flex-1">
-                <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Kids</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={10}
-                  value={kids}
-                  onChange={(e) => setKids(Math.max(0, Number(e.target.value)))}
-                  className="input w-full"
-                />
-              </label>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-red-600 text-sm mb-4 p-3 bg-red-50 rounded-xl">{error}</p>
-          )}
-
-          <button
-            onClick={() => doGenerate(false)}
-            disabled={checkedCount === 0}
-            className="btn-primary w-full text-base py-4"
-          >
-            {checkedCount === 0
-              ? "Select at least one ingredient"
-              : `Generate recipe with ${checkedCount} ingredient${checkedCount === 1 ? "" : "s"} →`}
+          <button onClick={addManual} className="add-btn" disabled={!inputValue.trim()}>
+            Add
           </button>
-        </>
+        </div>
+        <p className="text-xs text-stone-400 mt-2">Separate multiple with commas, or press Enter after each</p>
+
+        {manualItems.length > 0 && (
+          <div className="chip-list">
+            {manualItems.map((name) => (
+              <span key={name} className="chip">
+                {name}
+                <button onClick={() => removeManual(name)} className="chip-x" aria-label={`Remove ${name}`}>×</button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Kitchen items selected as additions */}
+        {checkedFromKitchen.size > 0 && (
+          <div className="chip-list">
+            {kitchenItems.filter((i) => checkedFromKitchen.has(i.id)).map((item) => (
+              <span key={item.id} className="chip chip-kitchen">
+                {item.name}
+                <button onClick={() => toggleKitchen(item.id)} className="chip-x" aria-label={`Remove ${item.name}`}>×</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ADD FROM KITCHEN — collapsible */}
+      <div className="card mb-4 overflow-hidden">
+        <button
+          className="kitchen-toggle"
+          onClick={showKitchen ? () => setShowKitchen(false) : handleShowKitchen}
+        >
+          <span>Add from your kitchen</span>
+          <span style={{ transform: showKitchen ? "rotate(180deg)" : "none", transition: "transform .2s", display: "inline-block" }}>▾</span>
+        </button>
+
+        {showKitchen && (
+          <div className="p-3 pt-0">
+            {loadingKitchen ? (
+              <p className="text-xs text-stone-400 p-2">Loading…</p>
+            ) : kitchenItems.length === 0 ? (
+              <p className="text-xs text-stone-400 p-2">Nothing saved in your kitchen yet. Add items on the <a href="/pantry" className="underline">My kitchen</a> page.</p>
+            ) : (
+              <>
+                <KitchenSection title="Deliveries" icon="📦" items={deliveryItems} checked={checkedFromKitchen} onToggle={toggleKitchen} />
+                <KitchenSection title="Fridge" icon="🧊" items={fridgeItems} checked={checkedFromKitchen} onToggle={toggleKitchen} />
+                <KitchenSection title="Freezer" icon="❄️" items={freezerItems} checked={checkedFromKitchen} onToggle={toggleKitchen} />
+                <KitchenSection title="Pantry" icon="🥫" items={shelfItems} checked={checkedFromKitchen} onToggle={toggleKitchen} />
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* PREFERENCES */}
+      <div className="card p-5 mb-5">
+        <p className="font-display text-base mb-4">Preferences</p>
+
+        <label className="block mb-4">
+          <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Cuisine</span>
+          <input
+            type="text"
+            value={cuisine}
+            onChange={(e) => setCuisine(e.target.value)}
+            placeholder="e.g. Italian, Thai, anything goes…"
+            className="input w-full"
+          />
+        </label>
+
+        <div className="mb-4">
+          <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Time available</span>
+          <div className="flex gap-2 flex-wrap">
+            {([30, 45, 60, null] as TimeLimit[]).map((t) => (
+              <button
+                key={String(t)}
+                onClick={() => setTimeLimit(timeLimit === t ? null : t)}
+                className={`time-pill${timeLimit === t ? " active" : ""}`}
+              >
+                {t === null ? "No limit" : `${t} min`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <label className="flex-1">
+            <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Adults</span>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={adults}
+              onChange={(e) => setAdults(Math.max(1, Number(e.target.value)))}
+              className="input w-full"
+            />
+          </label>
+          <label className="flex-1">
+            <span className="text-xs text-stone-500 uppercase tracking-wider block mb-1.5">Kids</span>
+            <input
+              type="number"
+              min={0}
+              max={10}
+              value={kids}
+              onChange={(e) => setKids(Math.max(0, Number(e.target.value)))}
+              className="input w-full"
+            />
+          </label>
+        </div>
+      </div>
+
+      {error && (
+        <p className="text-red-600 text-sm mb-4 p-3 bg-red-50 rounded-xl">{error}</p>
       )}
+
+      <button
+        onClick={() => doGenerate(false)}
+        disabled={totalSelected === 0}
+        className="btn-primary w-full text-base py-4"
+        style={{ opacity: totalSelected === 0 ? 0.5 : 1 }}
+      >
+        {totalSelected === 0
+          ? "Add at least one ingredient above"
+          : `Generate recipe →`}
+      </button>
 
       {/* Overwrite confirm modal */}
       {showConflict && (
@@ -291,8 +356,61 @@ export default function QuickMealPage() {
           background: #fff;
           outline: none;
           color: #1f1b16;
+          width: 100%;
+          box-sizing: border-box;
         }
         .input:focus { border-color: #4a6b4a; }
+        .add-btn {
+          padding: .55rem 1.1rem;
+          background: #4a6b4a;
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          font-size: .9rem;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .add-btn:disabled { opacity: .4; cursor: default; }
+        .chip-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; }
+        .chip {
+          display: inline-flex;
+          align-items: center;
+          gap: .3rem;
+          background: #eaf0e8;
+          color: #2d4a2d;
+          border-radius: 9999px;
+          padding: .3rem .65rem .3rem .8rem;
+          font-size: .85rem;
+          font-weight: 500;
+        }
+        .chip-kitchen { background: #f1ece2; color: #5c4a1e; }
+        .chip-x {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: inherit;
+          font-size: 1rem;
+          line-height: 1;
+          padding: 0;
+          opacity: .6;
+        }
+        .chip-x:hover { opacity: 1; }
+        .kitchen-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: .85rem 1rem;
+          background: none;
+          border: none;
+          font-size: .9rem;
+          color: #6b6258;
+          cursor: pointer;
+          text-align: left;
+        }
+        .kitchen-toggle:hover { color: #1f1b16; }
         .time-pill {
           padding: .4rem .9rem;
           border-radius: 9999px;
@@ -302,12 +420,7 @@ export default function QuickMealPage() {
           color: #6b6258;
           cursor: pointer;
         }
-        .time-pill.active {
-          background: #eaf0e8;
-          border-color: #4a6b4a;
-          color: #4a6b4a;
-          font-weight: 500;
-        }
+        .time-pill.active { background: #eaf0e8; border-color: #4a6b4a; color: #4a6b4a; font-weight: 500; }
         .spinner {
           width: 40px;
           height: 40px;
@@ -334,27 +447,6 @@ export default function QuickMealPage() {
           max-width: 380px;
           width: 100%;
         }
-        .section-title {
-          display: flex;
-          align-items: center;
-          gap: .5rem;
-          font-family: var(--font-display);
-          font-size: .95rem;
-          margin-bottom: .75rem;
-          color: #1f1b16;
-        }
-        .check-item {
-          display: flex;
-          align-items: center;
-          gap: .75rem;
-          padding: .6rem .5rem;
-          border-radius: 10px;
-          cursor: pointer;
-          user-select: none;
-        }
-        .check-item:hover { background: #faf7f2; }
-        .check-item input[type=checkbox] { width: 18px; height: 18px; accent-color: #4a6b4a; flex-shrink: 0; cursor: pointer; }
-        .check-item.checked { background: #f0f5ef; }
         .btn-secondary {
           background: #f1ece2;
           color: #1f1b16;
@@ -367,20 +459,41 @@ export default function QuickMealPage() {
           text-align: center;
         }
         .btn-secondary:hover { background: #e8e0d0; }
+        .check-item {
+          display: flex;
+          align-items: center;
+          gap: .75rem;
+          padding: .5rem .4rem;
+          border-radius: 10px;
+          cursor: pointer;
+          user-select: none;
+        }
+        .check-item:hover { background: #faf7f2; }
+        .check-item input[type=checkbox] { width: 17px; height: 17px; accent-color: #4a6b4a; flex-shrink: 0; cursor: pointer; }
+        .check-item.checked { background: #f0f5ef; }
         .cat-label {
           font-size: .7rem;
           text-transform: uppercase;
           letter-spacing: .1em;
           color: #a8a095;
-          padding: .5rem .5rem .2rem;
+          padding: .5rem .4rem .2rem;
           font-family: var(--font-display);
+        }
+        .kitchen-section-title {
+          font-size: .8rem;
+          font-weight: 600;
+          color: #6b6258;
+          padding: .6rem .4rem .3rem;
+          display: flex;
+          align-items: center;
+          gap: .4rem;
         }
       `}</style>
     </>
   );
 }
 
-function ItemSection({
+function KitchenSection({
   title,
   icon,
   items,
@@ -395,21 +508,16 @@ function ItemSection({
 }) {
   if (items.length === 0) return null;
 
-  // Group by category
   const categories = Array.from(new Set(items.map((i) => i.category))).sort();
 
   return (
-    <div className="card p-4 mb-4">
-      <p className="section-title">
-        <span>{icon}</span> {title}
-      </p>
+    <div className="mb-1">
+      <p className="kitchen-section-title"><span>{icon}</span> {title}</p>
       {categories.map((cat) => {
         const catItems = items.filter((i) => i.category === cat);
         return (
           <div key={cat}>
-            {categories.length > 1 && (
-              <p className="cat-label">{cat}</p>
-            )}
+            {categories.length > 1 && <p className="cat-label">{cat}</p>}
             {catItems.map((item) => (
               <label key={item.id} className={`check-item${checked.has(item.id) ? " checked" : ""}`}>
                 <input
@@ -418,9 +526,7 @@ function ItemSection({
                   onChange={() => onToggle(item.id)}
                 />
                 <span className="flex-1 text-sm">{item.name}</span>
-                {item.qty && (
-                  <span className="text-xs text-stone-400">{item.qty}</span>
-                )}
+                {item.qty && <span className="text-xs text-stone-400">{item.qty}</span>}
               </label>
             ))}
           </div>
