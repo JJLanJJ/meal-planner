@@ -1,5 +1,19 @@
 import { getClient } from "@/db";
 
+// DELETE: purge one or all cached images so they can be regenerated
+// ?title=... clears a single entry; no param clears all
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const title = searchParams.get("title");
+  const db = await getClient();
+  if (title) {
+    await db.execute({ sql: "DELETE FROM food_images WHERE title = ?", args: [title] });
+  } else {
+    await db.execute({ sql: "DELETE FROM food_images", args: [] });
+  }
+  return new Response(null, { status: 204 });
+}
+
 // GET: serve from cache only (fast, no external calls)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);

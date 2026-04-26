@@ -45,7 +45,7 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
       <div className="recipe-grid mt-4">
         <div className="ga-photo">
           <div style={{ borderRadius: 20, overflow: "hidden" }}>
-            <FoodImage title={recipe.title} cuisine={recipe.cuisine} height={280} />
+            <FoodImage title={recipe.title} cuisine={recipe.cuisine} description={recipe.description} height={280} />
           </div>
         </div>
 

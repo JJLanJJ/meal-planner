@@ -28,22 +28,28 @@ function getTheme(title: string, cuisine?: string) {
 export function FoodImage({
   title,
   cuisine,
+  description,
   height = 160,
 }: {
   title: string;
   cuisine?: string;
+  description?: string;
   height?: number;
 }) {
   const [src, setSrc] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [triedCache, setTriedCache] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const cacheUrl = `/api/food-image?title=${encodeURIComponent(title)}`;
   const theme = getTheme(title, cuisine);
 
   useEffect(() => {
     let cancelled = false;
-    // Check cache — if hit, show photo; if miss, stay on gradient
+    setSrc(null);
+    setLoaded(false);
+    setTriedCache(false);
+
     const img = new Image();
     img.onload = () => {
       if (!cancelled && img.naturalWidth > 1) setSrc(cacheUrl);
@@ -54,7 +60,6 @@ export function FoodImage({
     };
     img.src = cacheUrl;
 
-    // Don't wait forever for cache check
     const timer = setTimeout(() => {
       if (!cancelled) setTriedCache(true);
     }, 3000);
@@ -68,15 +73,33 @@ export function FoodImage({
       fetch(`/api/food-image/cache`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title, cuisine }),
+        body: JSON.stringify({ title, cuisine, description }),
       })
         .then((r) => r.json())
         .then((j) => {
-          if (j.cached) setSrc(cacheUrl);
+          if (j.cached) setSrc(cacheUrl + "&t=" + Date.now());
         })
         .catch(() => {});
     }
-  }, [triedCache, src, title, cuisine, cacheUrl]);
+  }, [triedCache, src, title, cuisine, description, cacheUrl]);
+
+  function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setSrc(null);
+    setLoaded(false);
+    fetch(`/api/food-image/cache`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title, cuisine, description, forceRefresh: true }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.cached) setSrc(cacheUrl + "&t=" + Date.now());
+      })
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
+  }
 
   return (
     <div
@@ -138,6 +161,34 @@ export function FoodImage({
           </span>
         </div>
       )}
+      {/* Refresh button — tap to regenerate with the improved prompt */}
+      <button
+        onClick={handleRefresh}
+        title="Regenerate image"
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "rgba(0,0,0,0.35)",
+          border: "none",
+          cursor: refreshing ? "wait" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 14,
+          color: "#fff",
+          zIndex: 10,
+          transition: "opacity 0.2s",
+          opacity: 0.6,
+        }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+        onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}
+      >
+        {refreshing ? "⏳" : "↻"}
+      </button>
     </div>
   );
 }

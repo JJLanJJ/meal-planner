@@ -4,23 +4,27 @@ import { getClient } from "@/db";
 export const maxDuration = 30;
 
 // POST: generate a food photo with Imagen 4 Fast and cache it in Turso.
+// Accepts { title, cuisine?, description?, forceRefresh? }
 export async function POST(req: Request) {
-  const { title, cuisine } = await req
+  const { title, cuisine, description, forceRefresh } = await req
     .json()
-    .catch(() => ({ title: "", cuisine: "" }));
+    .catch(() => ({ title: "", cuisine: "", description: "", forceRefresh: false }));
   if (!title) {
     return NextResponse.json({ error: "title required" }, { status: 400 });
   }
 
   const db = await getClient();
 
-  // Already cached?
-  const exists = await db.execute({
-    sql: "SELECT 1 FROM food_images WHERE title = ?",
-    args: [title],
-  });
-  if (exists.rows.length > 0) {
-    return NextResponse.json({ cached: true });
+  if (forceRefresh) {
+    await db.execute({ sql: "DELETE FROM food_images WHERE title = ?", args: [title] });
+  } else {
+    const exists = await db.execute({
+      sql: "SELECT 1 FROM food_images WHERE title = ?",
+      args: [title],
+    });
+    if (exists.rows.length > 0) {
+      return NextResponse.json({ cached: true });
+    }
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -28,9 +32,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "GEMINI_API_KEY not set" }, { status: 501 });
   }
 
-  // Craft a prompt tuned for appetizing recipe card photos.
-  const cuisineClause = cuisine ? `, ${cuisine} cuisine` : "";
-  const prompt = `Professional overhead food photography of ${title}${cuisineClause}. Plated on a ceramic dish with subtle garnish, warm natural daylight, soft shadows, shallow depth of field, rustic wooden table background, appetizing and restaurant-quality styling. No text, no watermarks, no people.`;
+  // Ground the prompt in the specific dish, not just the cuisine name.
+  // Without this, Imagen defaults to the most iconic food of the cuisine (e.g. sushi for Asian).
+  const descClause = description ? ` It looks like: ${description}` : "";
+  const cuisineClause = cuisine ? ` ${cuisine} cuisine style.` : "";
+  const prompt = `Appetizing food photography for a recipe card. The dish is: "${title}".${descClause} Show this exact dish — do not substitute with a different food. Overhead or 45-degree angle shot, plated on a ceramic dish or rustic pan, warm natural daylight, shallow depth of field, restaurant-quality styling.${cuisineClause} No text, no watermarks, no people.`;
 
   try {
     const res = await fetch(
