@@ -321,6 +321,19 @@ export function findFoodCategory(name: string): string | null {
   return partial?.category ?? null;
 }
 
+/** Returns the most likely storage location for a given food category. */
+export function locationForCategory(category: string): "fridge" | "freezer" | "pantry" {
+  if (category === "Dairy & Fridge" || category === "Meat & Protein" || category === "Produce") return "fridge";
+  if (category === "Frozen") return "freezer";
+  return "pantry";
+}
+
+/** Returns the most likely storage location for a food item by name. Returns null if unknown. */
+export function suggestLocation(name: string): "fridge" | "freezer" | "pantry" | null {
+  const cat = findFoodCategory(name);
+  return cat ? locationForCategory(cat) : null;
+}
+
 export const PANTRY_CATEGORIES = [
   "Produce",
   "Meat & Protein",

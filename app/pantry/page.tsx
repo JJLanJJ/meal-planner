@@ -5,6 +5,8 @@ import { useEffect, useState, useRef } from "react";
 import {
   searchFoods,
   findFoodCategory,
+  locationForCategory,
+  suggestLocation,
   PANTRY_CATEGORIES,
   type FoodSuggestion,
 } from "@/lib/food-suggestions";
@@ -78,10 +80,19 @@ export default function KitchenPage() {
     setSuggestions(results);
     setSelectedIdx(-1);
     setShowSuggestions(results.length > 0);
+    // Auto-suggest location based on the top match
+    if (results.length > 0) {
+      const loc = locationForCategory(results[0].category);
+      setAddLocation(loc);
+    } else {
+      const loc = suggestLocation(val);
+      if (loc) setAddLocation(loc);
+    }
   }
 
   function pickSuggestion(s: FoodSuggestion) {
     setName(s.name);
+    setAddLocation(locationForCategory(s.category));
     setSuggestions([]);
     setShowSuggestions(false);
   }
@@ -107,7 +118,9 @@ export default function KitchenPage() {
       setShowSuggestions(false);
       return;
     }
-    await commitAdd(trimmed, qty.trim() || null, category, addLocation);
+    // Use the category to pick the best location rather than relying on addLocation
+    const location = locationForCategory(category);
+    await commitAdd(trimmed, qty.trim() || null, category, location);
     setName("");
     setQty("");
     setSuggestions([]);
