@@ -161,7 +161,9 @@ export async function deductPantryOnCook(recipe: Recipe): Promise<void> {
     }
 
     const remaining = itemQty.value - usedQty.value;
-    if (remaining <= 0) {
+    // If less than 20% of the original stock is left, just use it all — not worth tracking tiny remnants
+    const trivialLeftover = remaining > 0 && remaining / itemQty.value < 0.2;
+    if (remaining <= 0 || trivialLeftover) {
       stmts.push({ sql: "DELETE FROM pantry_items WHERE id = ?", args: [match.id] });
     } else {
       stmts.push({
