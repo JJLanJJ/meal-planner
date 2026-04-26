@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -32,7 +32,15 @@ const NAV: { section: string; items: { href: string; icon: string; label: string
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [tonightMeal, setTonightMeal] = useState<{ id: number; title: string } | null>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    fetch("/api/quick")
+      .then((r) => r.json())
+      .then((d) => { if (d.meal) setTonightMeal(d.meal); })
+      .catch(() => {});
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -47,6 +55,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span style={{ fontSize: "1.6rem" }}>🍳</span>
           <span className="sb-label">Meal Planner</span>
         </h2>
+        {tonightMeal && (
+          <div style={{ marginBottom: "0.5rem" }}>
+            <p className="nav-section">Tonight</p>
+            <Link
+              href={`/meals/${tonightMeal.id}`}
+              className={`nav-link tonight-link${pathname.startsWith(`/meals/${tonightMeal.id}`) ? " active" : ""}`}
+              onClick={() => setOpen(false)}
+            >
+              <span className="nav-icon">🍽️</span>
+              <span className="sb-label" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                {tonightMeal.title}
+              </span>
+            </Link>
+          </div>
+        )}
         {NAV.map((group) => (
           <div key={group.section}>
             <p className="nav-section">{group.section}</p>
@@ -127,6 +150,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
         .nav-link:hover { background: #faf7f2; color: #1f1b16; }
         .nav-link.active { background: #eaf0e8; color: #4a6b4a; font-weight: 500; }
+        .tonight-link { background: #f0f5ef; color: #3a5a3a; font-weight: 500; }
+        .tonight-link:hover { background: #e4ede3; color: #2a4a2a; }
         .nav-icon { width: 18px; text-align: center; flex-shrink: 0; }
         .sidebar-overlay {
           position: fixed;
