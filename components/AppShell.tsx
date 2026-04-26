@@ -17,6 +17,7 @@ const NAV: { section: string; items: { href: string; icon: string; label: string
     items: [
       { href: "/quick", icon: "⚡", label: "Quick meal" },
       { href: "/plans/new", icon: "+", label: "Start a plan" },
+      { href: "/pantry", icon: "▤", label: "My kitchen" },
     ],
   },
   {
@@ -24,7 +25,6 @@ const NAV: { section: string; items: { href: string; icon: string; label: string
     items: [
       { href: "/plans", icon: "▥", label: "Plans" },
       { href: "/favourites", icon: "♥", label: "Favourites" },
-      { href: "/pantry", icon: "▤", label: "My kitchen" },
       { href: "/history", icon: "↺", label: "History" },
     ],
   },
