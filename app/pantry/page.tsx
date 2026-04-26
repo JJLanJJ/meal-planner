@@ -213,16 +213,15 @@ export default function KitchenPage() {
 
       const autoAdd: { name: string; qty: string | null; category: string; location: LocationKey }[] = [];
       const queue: { name: string; qty: string | null; location: LocationKey }[] = [];
-      // Photo items default to fridge (most likely to be perishable)
-      const photoLocation: LocationKey = "fridge";
       for (const it of photoItems) {
         const known = findFoodCategory(it.name);
         const aiCat = it.category && PANTRY_CATEGORIES.includes(it.category as any) ? it.category : null;
         const category = known ?? (aiCat && aiCat !== "Other" ? aiCat : null);
         if (category) {
-          autoAdd.push({ name: it.name, qty: it.qty ?? null, category, location: photoLocation });
+          autoAdd.push({ name: it.name, qty: it.qty ?? null, category, location: locationForCategory(category) });
         } else {
-          queue.push({ name: it.name, qty: it.qty ?? null, location: photoLocation });
+          // Unknown item — default fridge, user can change in the pending queue modal
+          queue.push({ name: it.name, qty: it.qty ?? null, location: "fridge" });
         }
       }
 
