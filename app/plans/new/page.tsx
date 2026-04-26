@@ -236,7 +236,7 @@ export default function NewPlanPage() {
         method: "POST",
         body: JSON.stringify({
           delivery,
-          pantry: pantry.map((p: any) => p.name),
+          pantry: pantry.map((p: any) => ({ name: p.name, qty: p.qty ?? null, location: p.location ?? "pantry" })),
           meals: nights,
           adults,
           kids,
@@ -284,7 +284,7 @@ export default function NewPlanPage() {
         method: "POST",
         body: JSON.stringify({
           delivery,
-          pantry: pantry.map((p: any) => p.name),
+          pantry: pantry.map((p: any) => ({ name: p.name, qty: p.qty ?? null, location: p.location ?? "pantry" })),
           meals: [nights[idx]],
           adults,
           kids,

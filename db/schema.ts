@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS pantry_items (
   name TEXT NOT NULL,
   qty TEXT,
   category TEXT NOT NULL DEFAULT 'Other',
+  location TEXT NOT NULL DEFAULT 'pantry',
   UNIQUE(name)
 );
 

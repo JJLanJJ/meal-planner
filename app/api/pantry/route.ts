@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { addPantryItem, deletePantryItem, listPantry, updatePantryItem } from "@/lib/repo";
+import { addPantryItem, deletePantryItem, listActiveDeliveryItems, listPantry, updatePantryItem } from "@/lib/repo";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  if (searchParams.get("section") === "deliveries") {
+    return NextResponse.json({ items: await listActiveDeliveryItems() });
+  }
   return NextResponse.json({ items: await listPantry() });
 }
 
@@ -10,6 +14,7 @@ const Body = z.object({
   name: z.string().min(1),
   category: z.string().default("Other"),
   qty: z.string().nullable().optional(),
+  location: z.enum(["pantry", "fridge", "freezer"]).default("pantry"),
 });
 
 export async function POST(req: Request) {
@@ -17,7 +22,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
-  await addPantryItem(parsed.data.name, parsed.data.category, parsed.data.qty);
+  await addPantryItem(parsed.data.name, parsed.data.category, parsed.data.qty, parsed.data.location);
   return NextResponse.json({ ok: true });
 }
 
@@ -26,6 +31,7 @@ const PatchBody = z.object({
   name: z.string().optional(),
   qty: z.string().nullable().optional(),
   category: z.string().optional(),
+  location: z.enum(["pantry", "fridge", "freezer"]).optional(),
 });
 
 export async function PATCH(req: Request) {

@@ -168,7 +168,7 @@ export async function getTonightMeal(): Promise<
 
 export async function listPantry(): Promise<PantryItemRow[]> {
   const c = await getClient();
-  const r = await c.execute("SELECT * FROM pantry_items ORDER BY category, name");
+  const r = await c.execute("SELECT * FROM pantry_items ORDER BY location, category, name");
   return rows<PantryItemRow>(r.rows as unknown as Row[]);
 }
 
@@ -176,17 +176,18 @@ export async function addPantryItem(
   name: string,
   category: string,
   qty?: string | null,
+  location?: string,
 ): Promise<void> {
   const c = await getClient();
   await c.execute({
-    sql: "INSERT OR IGNORE INTO pantry_items (name, qty, category) VALUES (?, ?, ?)",
-    args: [name, qty ?? null, category],
+    sql: "INSERT OR IGNORE INTO pantry_items (name, qty, category, location) VALUES (?, ?, ?, ?)",
+    args: [name, qty ?? null, category, location ?? "pantry"],
   });
 }
 
 export async function updatePantryItem(
   id: number,
-  patch: { name?: string; qty?: string | null; category?: string },
+  patch: { name?: string; qty?: string | null; category?: string; location?: string },
 ): Promise<void> {
   const fields = Object.keys(patch).filter((k) => (patch as any)[k] !== undefined);
   if (fields.length === 0) return;
@@ -199,6 +200,21 @@ export async function updatePantryItem(
 export async function deletePantryItem(id: number): Promise<void> {
   const c = await getClient();
   await c.execute({ sql: "DELETE FROM pantry_items WHERE id = ?", args: [id] });
+}
+
+/** Delivery items remaining across all active plans — for the Kitchen page "From deliveries" section. */
+export async function listActiveDeliveryItems(): Promise<
+  (InventoryItemRow & { plan_name: string | null; plan_created_at: string })[]
+> {
+  const c = await getClient();
+  const r = await c.execute(
+    `SELECT i.*, p.name as plan_name, p.created_at as plan_created_at
+     FROM inventory_items i
+     JOIN plans p ON p.id = i.plan_id
+     WHERE p.status = 'active' AND i.source = 'delivery'
+     ORDER BY i.available_from, i.name`,
+  );
+  return rows(r.rows as unknown as Row[]);
 }
 
 // ────────── Shopping ──────────

@@ -172,8 +172,8 @@ export default async function HomePage() {
               <p className="font-display text-lg mt-1">Favourites · {favCount}</p>
             </Link>
             <Link href="/pantry" className="nav-tile">
-              <p className="text-xs text-stone-500">Inventory</p>
-              <p className="font-display text-lg mt-1">My pantry · {pantryCount}</p>
+              <p className="text-xs text-stone-500">Available</p>
+              <p className="font-display text-lg mt-1">My kitchen · {pantryCount}</p>
             </Link>
             <Link href="/history" className="nav-tile">
               <p className="text-xs text-stone-500">Cooked</p>

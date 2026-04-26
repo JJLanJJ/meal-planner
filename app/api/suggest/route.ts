@@ -5,9 +5,15 @@ import { SuggestionsResponseSchema, DeliveryItemSchema } from "@/lib/types";
 import { listInventory } from "@/lib/repo";
 import { z } from "zod";
 
+const KitchenItemSchema = z.object({
+  name: z.string(),
+  qty: z.string().nullable().optional(),
+  location: z.string().default("pantry"),
+});
+
 const Body = z.object({
   delivery: z.array(DeliveryItemSchema),
-  pantry: z.array(z.string()),
+  pantry: z.array(KitchenItemSchema),
   planId: z.number().int().optional(), // if set, uses inventory (remaining quantities)
   meals: z.array(
     z.object({

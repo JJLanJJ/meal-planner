@@ -85,6 +85,7 @@ export interface PantryItemRow {
   name: string;
   qty: string | null;
   category: string;
+  location: string; // 'pantry' | 'fridge' | 'freezer'
 }
 
 export interface ShoppingItemRow {

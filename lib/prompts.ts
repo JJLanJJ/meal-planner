@@ -7,9 +7,15 @@ export interface MealPreference {
   difficulty: string | null; // "Easy" | "Medium" | "Hard" | null
 }
 
+export interface KitchenItem {
+  name: string;
+  qty?: string | null;
+  location: string; // 'pantry' | 'fridge' | 'freezer'
+}
+
 export interface SuggestInput {
   delivery: DeliveryItem[];
-  pantry: string[];
+  pantry: KitchenItem[];
   inventory?: InventoryItemRow[]; // if present, used instead of delivery+pantry
   meals: MealPreference[];
   adults: number;
@@ -25,9 +31,11 @@ export const SYSTEM_PROMPT = `You are a personal home chef writing recipe cards 
 Rules:
 - ONE recipe per requested cooking night.
 - Use the supplied DELIVERY items as the protein/produce backbone. Don't waste them.
-- Treat PANTRY items as freely available — don't list them as "to-buy".
+- Treat KITCHEN items (fridge, freezer, pantry) as freely available — don't list them as "to-buy". Mark them source: "pantry".
+- FRIDGE items are fresh/perishable — prefer using them up.
+- FREEZER items are available but note in the method if something needs to be thawed in advance.
 - Anything else needed must be marked source: "to-buy".
-- Mark delivery items as source: "delivery". Mark pantry items as source: "pantry".
+- Mark delivery items as source: "delivery".
 - IMPORTANT: Some items have an "available from" date. Only use items that are available on the night you are planning for. If an item arrives Thursday, do NOT use it for a Wednesday recipe.
 - Respect the cuisine preference for each night. If the cuisine is null, choose something complementary that doesn't repeat what's already in the week.
 - Respect the max_minutes constraint if set — the TOTAL cook time must not exceed it.
@@ -59,11 +67,11 @@ export function buildUserPrompt(input: SuggestInput): string {
 
   // Use inventory if available (shows remaining quantities after deductions)
   let deliverySection: string;
-  let pantrySection: string;
+  let kitchenSection: string;
 
   if (inventory && inventory.length > 0) {
     const invDelivery = inventory.filter((i) => i.source === "delivery");
-    const invPantry = inventory.filter((i) => i.source === "pantry");
+    const invKitchen = inventory.filter((i) => i.source === "pantry");
     deliverySection = invDelivery
       .map((d) => {
         const parts = [`- ${d.name}`];
@@ -74,14 +82,31 @@ export function buildUserPrompt(input: SuggestInput): string {
         return parts.join(" ");
       })
       .join("\n") || "(none)";
-    pantrySection = invPantry
+    kitchenSection = invKitchen
       .map((p) => `- ${p.name}${p.qty ? " (" + p.qty + ")" : ""}`)
       .join("\n") || "(none)";
   } else {
     deliverySection = delivery
       .map((d) => `- ${d.name}${d.qty ? " (" + d.qty + ")" : ""}`)
       .join("\n") || "(none)";
-    pantrySection = pantry.map((p) => `- ${p}`).join("\n") || "(none)";
+
+    // Group kitchen items by location for Claude's context
+    const fridge = pantry.filter((p) => p.location === "fridge");
+    const freezer = pantry.filter((p) => p.location === "freezer");
+    const shelf = pantry.filter((p) => p.location !== "fridge" && p.location !== "freezer");
+
+    const fmt = (items: KitchenItem[]) =>
+      items.map((p) => `- ${p.name}${p.qty ? " (" + p.qty + ")" : ""}`).join("\n") || "(none)";
+
+    kitchenSection =
+      `FRIDGE (fresh/perishable — prefer using these up):
+${fmt(fridge)}
+
+FREEZER (thaw in advance if needed):
+${fmt(freezer)}
+
+PANTRY (always available staples):
+${fmt(shelf)}`;
   }
 
   const dietaryLine = dietary?.trim() ? dietary.trim() : "(none)";
@@ -102,8 +127,8 @@ ${excludedLines}
 DELIVERY (use these first — quantities shown are what REMAINS, plan accordingly):
 ${deliverySection}
 
-PANTRY (free to use, do NOT list as to-buy):
-${pantrySection}
+KITCHEN — already in your home (mark as source: "pantry", do NOT list as to-buy):
+${kitchenSection}
 
 NIGHTS TO PLAN:
 ${nightLines.join("\n")}

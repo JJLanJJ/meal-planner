@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS pantry_items (
   name TEXT NOT NULL,
   qty TEXT,              -- e.g. "500g", "1 bottle"; NULL = always available
   category TEXT NOT NULL DEFAULT 'Other',
+  location TEXT NOT NULL DEFAULT 'pantry',  -- 'pantry' | 'fridge' | 'freezer'
   UNIQUE(name)
 );
 
