@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getMeal, getPlan } from "@/lib/repo";
 import { planDisplayName, type Recipe } from "@/lib/types";
 import { MealActions } from "./MealActions";
+import { MethodSteps } from "./MethodSteps";
 import { FoodImage } from "@/components/FoodImage";
 
 export const dynamic = "force-dynamic";
@@ -127,16 +128,7 @@ export default async function MealPage({ params }: { params: Promise<{ id: strin
 
         <div className="ga-method">
           <h2 className="font-display text-xl mb-2 mt-4">Method</h2>
-          {recipe.steps.map((s, i) => (
-            <div key={i} className="step">
-              <div className="step-num">{i + 1}</div>
-              <div>
-                <p className="text-xs num uppercase tracking-widest mb-1">{s.minutes} min</p>
-                <p className="text-sm leading-relaxed">{s.instruction}</p>
-                {s.child_note && <div className="child-note">{s.child_note}</div>}
-              </div>
-            </div>
-          ))}
+          <MethodSteps steps={recipe.steps} />
         </div>
       </div>
 
